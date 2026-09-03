@@ -16,6 +16,14 @@ import subprocess
 from pathlib import Path
 
 
+COMMON_SUPERSET_CANDIDATES = [
+    Path(r"D:\Sviluppo\superset"),
+    Path(r"C:\Users\fracas\Desktop\superset"),
+    Path(r"C:\Users\fracas\OneDrive - mapsengineering.com\superset-6.1.0"),
+    Path(r"..\superset").resolve(),
+]
+
+
 def log_info(msg: str):
     print(f"\033[94m[INFO]\033[0m {msg}")
 
@@ -32,6 +40,16 @@ def log_error(msg: str):
     print(f"\033[91m[ERROR]\033[0m {msg}")
 
 
+def auto_detect_superset_path() -> Path | None:
+    for candidate in COMMON_SUPERSET_CANDIDATES:
+        try:
+            if candidate.is_dir() and (candidate / "superset-frontend" / "package.json").is_file():
+                return candidate
+        except Exception:
+            continue
+    return None
+
+
 def find_superset_frontend(superset_root: Path) -> Path:
     frontend_dir = superset_root / "superset-frontend"
     if frontend_dir.is_dir() and (frontend_dir / "package.json").is_file():
@@ -44,8 +62,8 @@ def find_superset_frontend(superset_root: Path) -> Path:
 
 def find_main_preset(frontend_dir: Path) -> Path:
     candidates = [
-        frontend_dir / "src" / "visualizations" / "presets" / "MainPreset.js",
         frontend_dir / "src" / "visualizations" / "presets" / "MainPreset.ts",
+        frontend_dir / "src" / "visualizations" / "presets" / "MainPreset.js",
         frontend_dir / "src" / "setup" / "setupPlugins.ts",
         frontend_dir / "src" / "setup" / "setupPlugins.js",
     ]
@@ -61,7 +79,7 @@ def backup_file(file_path: Path):
     bak_path = file_path.with_suffix(file_path.suffix + ".bak")
     if not bak_path.exists():
         shutil.copy2(file_path, bak_path)
-        log_info(f"Created backup: {bak_path.name}")
+        log_info(f"Creato backup di sicurezza: {bak_path.name}")
 
 
 def copy_plugin_files(plugin_root: Path, frontend_dir: Path) -> tuple[str, bool]:
@@ -95,7 +113,7 @@ def patch_main_preset(preset_file: Path):
     register_stmt = "        new StratumHeatmapPlugin().configure({ key: 'stratum_heatmap' }).register(),\n"
 
     if "StratumHeatmapPlugin" in content:
-        log_warn(f"StratumHeatmapPlugin is already imported in {preset_file.name}. Skipping injection.")
+        log_warn(f"StratumHeatmapPlugin è già presente in {preset_file.name}. Registrazione saltata.")
         return
 
     content = import_stmt + content
@@ -109,7 +127,7 @@ def patch_main_preset(preset_file: Path):
     with open(preset_file, "w", encoding="utf-8") as f:
         f.write(content)
 
-    log_success(f"Registered StratumHeatmapPlugin (key: 'stratum_heatmap') in {preset_file.name}")
+    log_success(f"Registrato StratumHeatmapPlugin (key: 'stratum_heatmap') in {preset_file.name}")
 
 
 def trigger_docker_build(superset_root: Path, compose_file: str = "docker-compose-non-dev.yml"):
@@ -128,54 +146,89 @@ def trigger_docker_build(superset_root: Path, compose_file: str = "docker-compos
         log_info(f"Puoi eseguire manualmente sul server: docker compose -f {compose_file} up -d --build superset")
 
 
+def install_plugin(superset_root: Path, docker: bool = False, compose_file: str = "docker-compose-non-dev.yml", logger=None):
+    def _log(msg, level="info"):
+        if logger:
+            logger(msg, level)
+        elif level == "success":
+            log_success(msg)
+        elif level == "warn":
+            log_warn(msg)
+        elif level == "error":
+            log_error(msg)
+        else:
+            log_info(msg)
+
+    script_dir = Path(__file__).resolve().parent
+    plugin_root = script_dir.parent
+
+    if not superset_root.is_dir():
+        raise FileNotFoundError(f"Cartella Superset non trovata: {superset_root}")
+
+    _log(f"Cartella Target Superset: {superset_root}")
+    _log(f"Cartella Plugin: {plugin_root}")
+
+    frontend_dir = find_superset_frontend(superset_root)
+    main_preset = find_main_preset(frontend_dir)
+
+    _log(f"Frontend: {frontend_dir.name}")
+    _log(f"MainPreset: {main_preset.name}")
+
+    copy_plugin_files(plugin_root, frontend_dir)
+    patch_main_preset(main_preset)
+
+    if docker:
+        trigger_docker_build(superset_root, compose_file)
+
+    _log("Installazione di StratumHeatmap completata con successo!", "success")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Automated installer for StratumHeatmap Chart Plugin"
     )
+    default_path = auto_detect_superset_path()
     parser.add_argument(
         "--superset-path",
         "-s",
         type=str,
-        default="C:\\Users\\fracas\\Desktop\\Settaggi superset",
-        help="Path to the local Apache Superset repository root"
+        default=str(default_path) if default_path else None,
+        help="Percorso della cartella radice di Apache Superset"
     )
     parser.add_argument(
         "--compose-file",
         "-c",
         type=str,
         default="docker-compose-non-dev.yml",
-        help="Docker compose file to use"
+        help="Docker compose file da utilizzare"
     )
     parser.add_argument(
         "--docker",
         action="store_true",
         default=False,
-        help="Build and restart Docker compose superset service"
+        help="Ricostruisce e riavvia il container Docker compose"
+    )
+    parser.add_argument(
+        "--no-docker",
+        dest="docker",
+        action="store_false",
+        help="Non esegue comandi Docker"
     )
 
     args = parser.parse_args()
-    superset_root = Path(args.superset_path).resolve()
-    script_dir = Path(__file__).resolve().parent
-    plugin_root = script_dir.parent
 
-    if not superset_root.is_dir():
-        log_error(f"Cartella Superset non trovata: {superset_root}")
-        sys.exit(1)
+    if not args.superset_path:
+        print("\033[93m[ATTENZIONE]\033[0m Nessun percorso Superset specificato o auto-rilevato.")
+        path_input = input("Inserisci il percorso della cartella radice di Apache Superset: ").strip()
+        if not path_input:
+            print("\033[91m[ERRORE]\033[0m Percorso obbligatorio. Operazione annullata.")
+            sys.exit(1)
+        args.superset_path = path_input
+
+    superset_root = Path(args.superset_path).resolve()
 
     try:
-        frontend_dir = find_superset_frontend(superset_root)
-        main_preset = find_main_preset(frontend_dir)
-
-        log_info(f"Cartella Frontend: {frontend_dir}")
-        log_info(f"MainPreset file: {main_preset}")
-
-        copy_plugin_files(plugin_root, frontend_dir)
-        patch_main_preset(main_preset)
-
-        if args.docker:
-            trigger_docker_build(superset_root, args.compose_file)
-
-        log_success("Installazione di StratumHeatmap completata con successo!")
+        install_plugin(superset_root, docker=args.docker, compose_file=args.compose_file)
     except Exception as e:
         log_error(f"Errore durante l'installazione: {e}")
         sys.exit(1)

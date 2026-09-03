@@ -68,20 +68,27 @@ D:\Sviluppo\superset-plugin-chart-stratum-heatmap/
 
 ## 🚀 Installazione Rapida in Apache Superset
 
-### Metodo 1: Installer Automatico (Consigliato)
-Esegui semplicemente:
-```cmd
-install.bat
-```
-oppure:
+La repository include una suite completa di installer automatici con **auto-rilevamento** della cartella Superset:
+
+### Opzione 1: Interfaccia Grafica Desktop GUI (Consigliata)
+Fai semplicemente doppio clic su:
+👉 **`install.bat`**  
+oppure avvia l'interfaccia grafica con:
 ```bash
-python scripts/installer.py --superset-path "C:\Users\fracas\Desktop\Settaggi superset"
+python scripts/installer_gui.py
+```
+Si aprirà una finestra desktop nativa con anteprima del chart, rilevamento automatico del path (`D:\Sviluppo\superset`), pulsante *Sfoglia...* e console dei log in tempo reale.
+
+### Opzione 2: PowerShell Script
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/install.ps1
 ```
 
-L'installer:
-1. Copia i sorgenti in `superset-frontend/plugins/superset-plugin-chart-stratum-heatmap`.
-2. Registra automaticamente il plugin in `MainPreset.js` con la chiave `stratum_heatmap`.
-3. Crea un backup di sicurezza del file di preset.
+### Opzione 3: Python CLI
+```bash
+python scripts/installer.py
+```
+*(Se eseguito senza parametri, rileva automaticamente l'installazione di Superset presente sul sistema).*
 
 ### Metodo 2: Registrazione Manuale
 Nel file `superset-frontend/src/visualizations/presets/MainPreset.js` (o `setupPlugins.ts`):
