@@ -1,0 +1,249 @@
+import React, { useRef, useEffect, useMemo } from 'react';
+import ReactECharts from 'echarts-for-react';
+import { StratumHeatmapTransformedProps, HeatmapCellData } from '../types';
+import { getOptimalTextColor, interpolateColor } from '../utils/contrast';
+import { formatPercentage } from '../utils/formatting';
+
+export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
+  const {
+    width,
+    height,
+    xCategories,
+    yCategories,
+    matrixData,
+    minValue,
+    maxValue,
+    visualMapMode,
+    colorRange,
+    showValues,
+    showPercentages,
+    cellRadius,
+    cellBorderWidth,
+    cellBorderColor,
+    autoContrastText,
+    xAxisDimension,
+    yAxisDimension,
+    onCellClick,
+  } = props;
+
+  const echartsRef = useRef<any>(null);
+
+  // Calcola le opzioni ECharts per il rendering
+  const option = useMemo(() => {
+    // Normalizzatore per calcolare contrasto colore etichetta
+    const valRange = maxValue - minValue || 1;
+
+    // Configurazione visualMap (Continua vs Piecewise)
+    const visualMapConfig: any = {
+      min: minValue,
+      max: maxValue,
+      calculable: visualMapMode === 'continuous',
+      orient: 'horizontal',
+      left: 'center',
+      bottom: 8,
+      inRange: {
+        color: colorRange,
+      },
+      textStyle: {
+        color: '#475569',
+        fontSize: 11,
+      },
+    };
+
+    if (visualMapMode === 'piecewise') {
+      visualMapConfig.type = 'piecewise';
+      visualMapConfig.splitNumber = 5;
+    } else {
+      visualMapConfig.type = 'continuous';
+    }
+
+    return {
+      tooltip: {
+        position: 'top',
+        backgroundColor: 'rgba(15, 23, 42, 0.92)',
+        borderColor: '#334155',
+        borderWidth: 1,
+        padding: [10, 14],
+        textStyle: {
+          color: '#ffffff',
+          fontSize: 12,
+        },
+        formatter: (params: any) => {
+          const item = params.data;
+          if (!item) return '';
+          const meta: HeatmapCellData = item[3];
+          if (!meta) return '';
+
+          return `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+              <div style="font-weight: 700; font-size: 13px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 4px;">
+                ${meta.xValue} × ${meta.yValue}
+              </div>
+              <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px;">
+                <span style="color: #94a3b8;">Valore:</span>
+                <span style="font-weight: 700; color: #38bdf8;">${meta.formattedValue}</span>
+              </div>
+              ${
+                showPercentages
+                  ? `
+                <div style="display: flex; justify-content: space-between; gap: 16px; font-size: 11px; color: #cbd5e1; margin-top: 4px; padding-top: 4px; border-top: 1px dashed rgba(255,255,255,0.15);">
+                  <span>% su fascia (${meta.yValue}):</span>
+                  <span><b>${formatPercentage(meta.rowPercentage)}</b></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; gap: 16px; font-size: 11px; color: #cbd5e1;">
+                  <span>% su giorno (${meta.xValue}):</span>
+                  <span><b>${formatPercentage(meta.colPercentage)}</b></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; gap: 16px; font-size: 11px; color: #cbd5e1;">
+                  <span>% su volume totale:</span>
+                  <span><b>${formatPercentage(meta.totalPercentage)}</b></span>
+                </div>
+              `
+                  : ''
+              }
+            </div>
+          `;
+        },
+      },
+      grid: {
+        top: 24,
+        right: 28,
+        bottom: 65,
+        left: 60,
+        containLabel: true,
+      },
+      xAxis: {
+        type: 'category',
+        data: xCategories,
+        splitArea: {
+          show: false,
+        },
+        axisLine: {
+          lineStyle: {
+            color: '#cbd5e1',
+          },
+        },
+        axisLabel: {
+          color: '#334155',
+          fontSize: 11,
+          fontWeight: 600,
+          interval: 0,
+        },
+      },
+      yAxis: {
+        type: 'category',
+        data: yCategories,
+        splitArea: {
+          show: false,
+        },
+        axisLine: {
+          lineStyle: {
+            color: '#cbd5e1',
+          },
+        },
+        axisLabel: {
+          color: '#334155',
+          fontSize: 11,
+          fontWeight: 500,
+        },
+      },
+      visualMap: visualMapConfig,
+      series: [
+        {
+          name: 'StratumHeatmap',
+          type: 'heatmap',
+          data: matrixData.map(d => [d[0], d[1], d[2], d[3]]),
+          label: {
+            show: showValues,
+            formatter: (p: any) => {
+              const val = p.data[2];
+              if (val === 0 || val === null) return '';
+              return String(val);
+            },
+            fontSize: 11,
+            fontWeight: 600,
+            color: (p: any) => {
+              if (!autoContrastText) return '#1c3d5e';
+              const val = p.data[2] || 0;
+              const normalized = (val - minValue) / valRange;
+              const cellBg = interpolateColor(colorRange, normalized);
+              return getOptimalTextColor(cellBg);
+            },
+          },
+          itemStyle: {
+            borderRadius: cellRadius,
+            borderColor: cellBorderColor,
+            borderWidth: cellBorderWidth,
+          },
+          emphasis: {
+            itemStyle: {
+              shadowBlur: 10,
+              shadowColor: 'rgba(0, 0, 0, 0.35)',
+              borderColor: '#0284c7',
+              borderWidth: 2,
+            },
+          },
+        },
+      ],
+    };
+  }, [
+    xCategories,
+    yCategories,
+    matrixData,
+    minValue,
+    maxValue,
+    visualMapMode,
+    colorRange,
+    showValues,
+    showPercentages,
+    cellRadius,
+    cellBorderWidth,
+    cellBorderColor,
+    autoContrastText,
+  ]);
+
+  // Gestione evento click su cella per Cross-Filtering
+  const onEvents = useMemo(() => {
+    return {
+      click: (params: any) => {
+        if (!onCellClick || !params.data) return;
+        const meta: HeatmapCellData = params.data[3];
+        if (!meta) return;
+
+        // Emette cross-filter congiunto su X e Y
+        onCellClick([
+          {
+            col: xAxisDimension,
+            op: 'IN',
+            val: [meta.xValue],
+          },
+          {
+            col: yAxisDimension,
+            op: 'IN',
+            val: [meta.yValue],
+          },
+        ]);
+      },
+    };
+  }, [onCellClick, xAxisDimension, yAxisDimension]);
+
+  return (
+    <div
+      style={{
+        width: `${width}px`,
+        height: `${height}px`,
+        position: 'relative',
+        background: '#ffffff',
+        overflow: 'hidden',
+      }}
+    >
+      <ReactECharts
+        ref={echartsRef}
+        option={option}
+        onEvents={onEvents}
+        style={{ width: '100%', height: '100%' }}
+        opts={{ renderer: 'canvas' }}
+      />
+    </div>
+  );
+}
