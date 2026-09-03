@@ -23,7 +23,6 @@ const metadata = new ChartMetadata({
     t('Density'),
     t('Cross-filter'),
     t('Healthcare'),
-    t('IDI'),
   ],
   credits: ['Francesco Castaldi'],
   exampleGallery: [{ url: example, urlDark: example }],

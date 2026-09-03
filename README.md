@@ -27,7 +27,7 @@
 * **Rich HTML Tooltip Multidimensionale:**
   * Mostra coordinate `[X × Y]`, valore assoluto, `% sul totale di riga`, `% sul totale di colonna` e `% sul grand total`.
 * **Palette Aziendale Integrata:**
-  * Default con la palette corporate **Waves of Blue IDI** (`#eef4f9` $\to$ `#bcd5ea` $\to$ `#7aa8cf` $\to$ `#3a6a9b` $\to$ `#1c3d5e`), con supporto a tutte le palette Superset.
+  * Default con la palette corporate **Waves of Blue** (`#eef4f9` $\to$ `#bcd5ea` $\to$ `#7aa8cf` $\to$ `#3a6a9b` $\to$ `#1c3d5e`), con supporto a tutte le palette Superset.
 * **Anteprima Grafica (Thumbnail Gallery):**
   * Include `thumbnail.png`, `thumbnail-dark.png` ed `example.png` integrati nei metadati per la modale di selezione grafici di Superset.
 

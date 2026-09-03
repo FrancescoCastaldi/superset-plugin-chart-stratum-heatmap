@@ -82,7 +82,7 @@ const config: ControlPanelConfig = {
               schemes: () => ({
                 wavesOfBlue: {
                   id: 'wavesOfBlue',
-                  label: 'Waves of Blue (IDI Corporate)',
+                  label: 'Waves of Blue (Corporate)',
                   colors: ['#eef4f9', '#bcd5ea', '#7aa8cf', '#3a6a9b', '#1c3d5e'],
                 },
                 supersetColors: {
@@ -101,7 +101,7 @@ const config: ControlPanelConfig = {
                   colors: ['#fffaf0', '#fbd38d', '#ed8936', '#9c4221'],
                 },
               }),
-              description: t('Select gradient color palette. Defaults to Waves of Blue IDI Corporate.'),
+              description: t('Select gradient color palette. Defaults to Waves of Blue Corporate.'),
             },
           },
         ],

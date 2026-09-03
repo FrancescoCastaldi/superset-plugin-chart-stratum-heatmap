@@ -114,7 +114,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     });
   });
 
-  // 5. Palette colori predefinita (Waves of Blue IDI)
+  // 5. Palette colori predefinita (Waves of Blue)
   const defaultColors = ['#eef4f9', '#bcd5ea', '#7aa8cf', '#3a6a9b', '#1c3d5e'];
   const colorRange = defaultColors;
 
