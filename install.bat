@@ -16,18 +16,24 @@ echo   StratumHeatmap - Apache Superset Plugin Installer
 echo ============================================================
 echo   [1] Esegui Installer PowerShell (install-plugin.ps1) [Consigliato]
 echo   [2] Avvia Interfaccia Grafica Windows (StratumHeatmapInstallerGUI.exe)
-echo   [3] Esegui Installer Python (scripts\installer.py)
-echo   [4] Esegui Installer Node.js (scripts\install.js)
+echo   [3] Installazione Completa da Zero (Clean Reinstall + Webpack + Docker)
+echo   [4] Esegui Installer Python (scripts\installer.py)
+echo   [5] Esegui Installer Node.js (scripts\install.js)
 echo ============================================================
-set /p CHOICE="Seleziona un'opzione [1/2/3/4, Invio per default: 1]: "
+set /p CHOICE="Seleziona un'opzione [1/2/3/4/5, Invio per default: 1]: "
 
 if "%CHOICE%"=="2" goto run_gui
-if "%CHOICE%"=="3" goto run_python
-if "%CHOICE%"=="4" goto run_node
+if "%CHOICE%"=="3" goto run_clean_reinstall
+if "%CHOICE%"=="4" goto run_python
+if "%CHOICE%"=="5" goto run_node
 goto run_ps
 
 :run_ps
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0install-plugin.ps1"
+goto end
+
+:run_clean_reinstall
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0install-plugin.ps1" -CleanReinstall -RebuildFrontend -RestartDocker
 goto end
 
 :run_gui

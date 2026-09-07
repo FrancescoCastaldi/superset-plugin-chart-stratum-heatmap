@@ -15,6 +15,12 @@
     Path to the Apache Superset root directory (e.g. C:\Users\admmaps\superset_6_1_0\superset).
 .PARAMETER PluginPath
     Path to the StratumHeatmap plugin root directory (default: script root).
+.PARAMETER CleanReinstall
+    Removes existing plugin folder completely and reinstalls from scratch.
+.PARAMETER RebuildFrontend
+    Runs 'npm run build' inside superset-frontend to recompile Webpack bundles.
+.PARAMETER RestartDocker
+    Automatically restarts/rebuilds Docker containers without prompting.
 .PARAMETER SkipBuild
     Skips running 'npm run build' before copying files.
 .PARAMETER NoDocker
@@ -25,6 +31,8 @@
     Runs non-interactively using defaults without prompting.
 .EXAMPLE
     .\install-plugin.ps1
+.EXAMPLE
+    .\install-plugin.ps1 -CleanReinstall -RebuildFrontend -RestartDocker
 .EXAMPLE
     .\install-plugin.ps1 -SupersetPath "C:\Users\admmaps\superset_6_1_0\superset"
 .EXAMPLE
@@ -39,6 +47,9 @@ param (
     [Parameter(Position = 1)]
     [string]$PluginPath,
 
+    [switch]$CleanReinstall,
+    [switch]$RebuildFrontend,
+    [switch]$RestartDocker,
     [switch]$SkipBuild,
     [switch]$NoDocker,
     [switch]$SkipCleanCache,
@@ -257,7 +268,7 @@ $hasExactRegister = $RawContent.Contains("new StratumHeatmapChartPlugin().config
 $importCount = ([regex]::Matches($RawContent, "from\s*['`"][^'`"]*superset-plugin-chart-stratum-heatmap")).Count
 $registerCount = ([regex]::Matches($RawContent, "new\s+StratumHeatmap")).Count
 
-if ($hasExactImport -and $hasExactRegister -and ($importCount -eq 1) -and ($registerCount -eq 1)) {
+if (-not $CleanReinstall -and $hasExactImport -and $hasExactRegister -and ($importCount -eq 1) -and ($registerCount -eq 1)) {
     Write-Color "[INFO] MainPreset.ts e' gia' registrato correttamente (idempotente - nessuna modifica necessaria)." "Green"
 } else {
     Write-Color "[INFO] Aggiornamento import e registrazione in corso..." "Yellow"
@@ -349,7 +360,77 @@ if (-not $SkipCleanCache) {
 }
 
 # -------------------------------------------------------------
-# 7. Summary & Docker Compose Instructions
+# 7. Frontend Webpack Build (Optional / Switch)
+# -------------------------------------------------------------
+if ($RebuildFrontend) {
+    Write-Color "=== FASE 5: Compilazione Webpack Frontend di Superset ===" "Cyan"
+    $NpmCmd = Get-Command "npm" -ErrorAction SilentlyContinue
+    if ($NpmCmd) {
+        Write-Color "[INFO] Esecuzione 'npm run build' in '$FrontendDir'..." "Yellow"
+        Write-Color "[INFO] Attendere: la compilazione dei bundle di Superset richiede 1-3 minuti..." "Gray"
+        $OrigLoc = Get-Location
+        try {
+            Set-Location $FrontendDir
+            & $NpmCmd.Source run build
+            if ($LASTEXITCODE -eq 0) {
+                Write-Color "[SUCCESS] Compilazione Webpack completata con successo!" "Green"
+            } else {
+                Write-Color "[WARN] 'npm run build' frontend terminato con codice $LASTEXITCODE." "Yellow"
+            }
+        } catch {
+            Write-Color "[WARN] Avviso durante compilazione frontend: $_" "Yellow"
+        } finally {
+            Set-Location $OrigLoc
+        }
+    } else {
+        Write-Color "[WARN] 'npm' non trovato nel PATH. Compilazione frontend saltata." "Yellow"
+    }
+    Write-Color ""
+}
+
+# -------------------------------------------------------------
+# 8. Automatic Docker Restart (Optional / Switch)
+# -------------------------------------------------------------
+if ($RestartDocker) {
+    Write-Color "=== FASE 6: Riavvio Container Superset Docker ===" "Cyan"
+    $DockerCmd = Get-Command "docker" -ErrorAction SilentlyContinue
+    if ($DockerCmd) {
+        $OrigLoc = Get-Location
+        try {
+            Set-Location $ResolvedSupersetPath
+            if (Test-Path (Join-Path $ResolvedSupersetPath "docker-compose-non-dev.yml")) {
+                Write-Color "[INFO] Esecuzione: docker compose -f docker-compose-non-dev.yml restart superset" "Yellow"
+                & $DockerCmd.Source compose -f docker-compose-non-dev.yml restart superset
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Color "[INFO] Tentativo alternativo: docker compose -f docker-compose-non-dev.yml up -d --build superset" "Yellow"
+                    & $DockerCmd.Source compose -f docker-compose-non-dev.yml up -d --build superset
+                }
+            } else {
+                Write-Color "[INFO] Esecuzione: docker compose restart superset_app" "Yellow"
+                & $DockerCmd.Source compose restart superset_app
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Color "[INFO] Tentativo alternativo: docker compose restart superset" "Yellow"
+                    & $DockerCmd.Source compose restart superset
+                }
+            }
+            if ($LASTEXITCODE -eq 0) {
+                Write-Color "[SUCCESS] Container Superset Docker riavviato con successo!" "Green"
+            } else {
+                Write-Color "[WARN] Docker ha restituito codice $LASTEXITCODE. Assicurati che Docker Desktop sia avviato." "Yellow"
+            }
+        } catch {
+            Write-Color "[WARN] Avviso durante operazione Docker: $_" "Yellow"
+        } finally {
+            Set-Location $OrigLoc
+        }
+    } else {
+        Write-Color "[WARN] Docker non trovato nel PATH di sistema." "Yellow"
+    }
+    Write-Color ""
+}
+
+# -------------------------------------------------------------
+# 9. Summary & Instructions
 # -------------------------------------------------------------
 Write-Color "================================================================" "Green"
 Write-Color "   INSTALLAZIONE COMPLETATA CON SUCCESSO!                      " "Green"
@@ -361,20 +442,20 @@ Write-Color "  - Preset aggiornato in:  $PresetFile" "Gray"
 Write-Color "  - Import registrato:     import { StratumHeatmapChartPlugin } from '...'" "Gray"
 Write-Color "  - Plugin key:            stratum_heatmap" "Gray"
 Write-Color ""
-Write-Color "ISTRUZIONI PER IL RIAVVIO DI APACHE SUPERSET:" "Yellow"
-Write-Color "  Apri un terminale nella cartella di Superset:" "White"
-Write-Color "    cd '$ResolvedSupersetPath'" "Cyan"
+Write-Color "COME VISUALIZZARE IL GRAFICO NEL BROWSER:" "Yellow"
+Write-Color "  1. Apri Apache Superset nel browser (es. http://localhost:8088 o il tuo URL)." "White"
+Write-Color "  2. FONDAMENTALE: Esegui un Hard Refresh premendo CTRL + F5 (o apri in Incognito)" "Cyan"
+Write-Color "     per forzare lo svuotamento della cache del browser e caricare i nuovi bundle." "Cyan"
+Write-Color "  3. Crea un nuovo grafico ('Create Chart') e cerca 'Stratum Heatmap' nella galleria!" "White"
 Write-Color ""
-Write-Color "  Opzione 1 (Produzione / Non-Dev - Consigliata):" "White"
-Write-Color "    docker compose -f docker-compose-non-dev.yml up -d --build superset" "Green"
-Write-Color ""
-Write-Color "  Opzione 2 (Sviluppo Frontend con Hot-Reload):" "White"
-Write-Color "    docker compose restart superset-node" "Green"
-Write-Color "    oppure:" "White"
-Write-Color "    docker compose up -d --build superset-node" "Green"
+Write-Color "COMANDI MANUALI DOCKER (qualora necessari):" "Yellow"
+Write-Color "  cd '$ResolvedSupersetPath'" "Cyan"
+Write-Color "  docker compose -f docker-compose-non-dev.yml up -d --build superset" "Green"
+Write-Color "  oppure:" "White"
+Write-Color "  docker compose restart superset-node" "Green"
 Write-Color ""
 
-if (-not $NoDocker -and -not $Force) {
+if (-not $RestartDocker -and -not $NoDocker -and -not $Force) {
     $DockerCmd = Get-Command "docker" -ErrorAction SilentlyContinue
     if ($DockerCmd) {
         Write-Color "Vuoi eseguire automaticamente il riavvio del container Docker adesso?" "Cyan"

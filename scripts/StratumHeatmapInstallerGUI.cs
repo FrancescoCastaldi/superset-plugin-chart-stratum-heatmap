@@ -16,8 +16,11 @@ namespace StratumHeatmapInstaller
         private TextBox txtPluginPath;
         private Button btnBrowseSuperset;
         private Button btnBrowsePlugin;
+        private CheckBox chkCleanReinstall;
         private CheckBox chkCleanCache;
         private CheckBox chkBuildPlugin;
+        private CheckBox chkBuildFrontend;
+        private CheckBox chkRestartDocker;
         private Button btnInstall;
         private Button btnRollback;
         private ProgressBar progressBar;
@@ -41,8 +44,8 @@ namespace StratumHeatmapInstaller
         private void InitializeComponent()
         {
             this.Text = "StratumHeatmap — Apache Superset Plugin Installer";
-            this.Size = new Size(720, 720);
-            this.MinimumSize = new Size(680, 680);
+            this.Size = new Size(780, 840);
+            this.MinimumSize = new Size(720, 720);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.FromArgb(248, 250, 252);
             this.Font = new Font("Segoe UI", 9.5f, FontStyle.Regular);
@@ -91,12 +94,12 @@ namespace StratumHeatmapInstaller
             Panel mainPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(24, 20, 24, 20),
+                Padding = new Padding(24, 16, 24, 16),
                 AutoScroll = true
             };
             this.Controls.Add(mainPanel);
 
-            int currentY = 15;
+            int currentY = 14;
 
             // --- SEZIONE 1: PATH SUPERSET ---
             Label lblSuperset = new Label
@@ -108,24 +111,24 @@ namespace StratumHeatmapInstaller
                 AutoSize = true
             };
             mainPanel.Controls.Add(lblSuperset);
-            currentY += 26;
+            currentY += 25;
 
             txtSupersetPath = new TextBox
             {
                 Location = new Point(0, currentY),
-                Size = new Size(540, 28),
+                Size = new Size(580, 28),
                 Font = new Font("Segoe UI", 10f),
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
             mainPanel.Controls.Add(txtSupersetPath);
 
             btnBrowseSuperset = CreateStyledButton("Sfoglia...", Color.FromArgb(71, 85, 105), Color.White);
-            btnBrowseSuperset.Location = new Point(550, currentY - 1);
+            btnBrowseSuperset.Location = new Point(590, currentY - 1);
             btnBrowseSuperset.Size = new Size(110, 30);
             btnBrowseSuperset.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnBrowseSuperset.Click += (s, e) => BrowseFolder(txtSupersetPath, "Seleziona la cartella radice di Apache Superset");
             mainPanel.Controls.Add(btnBrowseSuperset);
-            currentY += 40;
+            currentY += 38;
 
             // --- SEZIONE 2: PATH PLUGIN ---
             Label lblPlugin = new Label
@@ -137,29 +140,52 @@ namespace StratumHeatmapInstaller
                 AutoSize = true
             };
             mainPanel.Controls.Add(lblPlugin);
-            currentY += 26;
+            currentY += 25;
 
             txtPluginPath = new TextBox
             {
                 Location = new Point(0, currentY),
-                Size = new Size(540, 28),
+                Size = new Size(580, 28),
                 Font = new Font("Segoe UI", 10f),
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
             mainPanel.Controls.Add(txtPluginPath);
 
             btnBrowsePlugin = CreateStyledButton("Sfoglia...", Color.FromArgb(71, 85, 105), Color.White);
-            btnBrowsePlugin.Location = new Point(550, currentY - 1);
+            btnBrowsePlugin.Location = new Point(590, currentY - 1);
             btnBrowsePlugin.Size = new Size(110, 30);
             btnBrowsePlugin.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnBrowsePlugin.Click += (s, e) => BrowseFolder(txtPluginPath, "Seleziona la cartella del Plugin StratumHeatmap");
             mainPanel.Controls.Add(btnBrowsePlugin);
             currentY += 40;
 
-            // --- OPZIONI ---
+            // --- SEZIONE 3: OPZIONI REINSTALLAZIONE DA ZERO ---
+            Label lblOptions = new Label
+            {
+                Text = "3. Opzioni di Installazione / Reinstallazione da Zero:",
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(30, 41, 59),
+                Location = new Point(0, currentY),
+                AutoSize = true
+            };
+            mainPanel.Controls.Add(lblOptions);
+            currentY += 25;
+
+            chkCleanReinstall = new CheckBox
+            {
+                Text = "Rimuovi versione esistente e reinstalla completamente da zero (Clean Reinstall)",
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Checked = true,
+                Location = new Point(2, currentY),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(15, 23, 42)
+            };
+            mainPanel.Controls.Add(chkCleanReinstall);
+            currentY += 26;
+
             chkCleanCache = new CheckBox
             {
-                Text = "Pulisci automaticamente la cache Webpack (node_modules/.cache e dist)",
+                Text = "Pulisci automaticamente la cache Webpack (node_modules/.cache, .temp_cache, dist)",
                 Checked = true,
                 Location = new Point(2, currentY),
                 AutoSize = true,
@@ -170,36 +196,58 @@ namespace StratumHeatmapInstaller
 
             chkBuildPlugin = new CheckBox
             {
-                Text = "Esegui compilazione TypeScript preliminare del plugin (npm run build)",
+                Text = "Compilazione TypeScript preliminare del plugin (npm run build nel plugin)",
                 Checked = true,
                 Location = new Point(2, currentY),
                 AutoSize = true,
                 ForeColor = Color.FromArgb(51, 65, 85)
             };
             mainPanel.Controls.Add(chkBuildPlugin);
-            currentY += 35;
+            currentY += 26;
+
+            chkBuildFrontend = new CheckBox
+            {
+                Text = "Compilazione Webpack frontend di Superset (npm run build in superset-frontend)",
+                Checked = true,
+                Location = new Point(2, currentY),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(51, 65, 85)
+            };
+            mainPanel.Controls.Add(chkBuildFrontend);
+            currentY += 26;
+
+            chkRestartDocker = new CheckBox
+            {
+                Text = "Riavvia automaticamente container Superset Docker (docker compose restart/up)",
+                Checked = true,
+                Location = new Point(2, currentY),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(51, 65, 85)
+            };
+            mainPanel.Controls.Add(chkRestartDocker);
+            currentY += 34;
 
             // --- PULSANTI AZIONE ---
-            btnInstall = CreateStyledButton("🚀 Installa / Aggiorna in Superset", Color.FromArgb(2, 132, 199), Color.White);
+            btnInstall = CreateStyledButton("⚡ Installazione Completa da Zero (Clean Reinstall)", Color.FromArgb(2, 132, 199), Color.White);
             btnInstall.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnInstall.Location = new Point(0, currentY);
-            btnInstall.Size = new Size(340, 42);
+            btnInstall.Size = new Size(440, 44);
             btnInstall.Click += async (s, e) => await ExecuteInstallation(false);
             mainPanel.Controls.Add(btnInstall);
 
             btnRollback = CreateStyledButton("🔄 Rollback / Disinstalla", Color.FromArgb(225, 29, 72), Color.White);
-            btnRollback.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
-            btnRollback.Location = new Point(355, currentY);
-            btnRollback.Size = new Size(200, 42);
+            btnRollback.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnRollback.Location = new Point(450, currentY);
+            btnRollback.Size = new Size(220, 44);
             btnRollback.Click += async (s, e) => await ExecuteInstallation(true);
             mainPanel.Controls.Add(btnRollback);
-            currentY += 52;
+            currentY += 54;
 
             // Progress Bar & Status
             progressBar = new ProgressBar
             {
                 Location = new Point(0, currentY),
-                Size = new Size(660, 8),
+                Size = new Size(700, 8),
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 Style = ProgressBarStyle.Continuous
             };
@@ -220,7 +268,7 @@ namespace StratumHeatmapInstaller
             // --- LOG CONSOLE ---
             Label lblLogTitle = new Label
             {
-                Text = "Console Log di Operazione:",
+                Text = "Console Log di Operazione (Streaming in Tempo Reale):",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(30, 41, 59),
                 Location = new Point(0, currentY),
@@ -232,10 +280,10 @@ namespace StratumHeatmapInstaller
             txtLog = new RichTextBox
             {
                 Location = new Point(0, currentY),
-                Size = new Size(660, 180),
+                Size = new Size(700, 200),
                 BackColor = Color.FromArgb(15, 23, 42),
                 ForeColor = Color.FromArgb(248, 250, 252),
-                Font = new Font("Consolas", 9.5f),
+                Font = new Font("Consolas", 9.2f),
                 ReadOnly = true,
                 BorderStyle = BorderStyle.None,
                 Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
@@ -295,7 +343,7 @@ namespace StratumHeatmapInstaller
             }
             if (detectedPlugin == null)
             {
-                string defaultUsb = @"D:\Sviluppo\superset-plugin-chart-stratum-heatmap";
+                string defaultUsb = @"D:\Sviluppo\superset-plugins\superset-plugin-chart-stratum-heatmap";
                 if (Directory.Exists(defaultUsb)) detectedPlugin = defaultUsb;
             }
             txtPluginPath.Text = detectedPlugin ?? appDir;
@@ -307,7 +355,10 @@ namespace StratumHeatmapInstaller
                 @"D:\Sviluppo\superset",
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "superset_6_1_0", "superset"),
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Desktop", "superset"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "superset")
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OneDrive - mapsengineering.com", "superset-6.1.0"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "superset"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Projects", "superset"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "dev", "superset")
             };
 
             string detectedSuperset = null;
@@ -336,9 +387,20 @@ namespace StratumHeatmapInstaller
         {
             if (txtLog.InvokeRequired)
             {
-                txtLog.Invoke(new Action(() => AppendLog(message, color)));
+                if (!txtLog.IsDisposed && txtLog.IsHandleCreated)
+                {
+                    txtLog.BeginInvoke(new Action(() => AppendLog(message, color)));
+                }
                 return;
             }
+
+            // Evita crescita infinita di memoria nel RichTextBox
+            if (txtLog.TextLength > 200000)
+            {
+                txtLog.Select(0, 50000);
+                txtLog.SelectedText = "";
+            }
+
             string timeStamp = DateTime.Now.ToString("HH:mm:ss");
             txtLog.SelectionStart = txtLog.TextLength;
             txtLog.SelectionLength = 0;
@@ -346,7 +408,87 @@ namespace StratumHeatmapInstaller
             txtLog.AppendText("[" + timeStamp + "] ");
             txtLog.SelectionColor = color;
             txtLog.AppendText(message + "\r\n");
+            txtLog.SelectionStart = txtLog.TextLength;
             txtLog.ScrollToCaret();
+        }
+
+        private int RunProcessStreaming(string workingDir, string fileName, string arguments, string logPrefix)
+        {
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo
+                {
+                    FileName = fileName,
+                    Arguments = arguments,
+                    WorkingDirectory = workingDir,
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+
+                using (Process proc = new Process())
+                {
+                    proc.StartInfo = psi;
+                    proc.OutputDataReceived += (s, e) =>
+                    {
+                        if (e.Data != null)
+                        {
+                            string pfx = string.IsNullOrEmpty(logPrefix) ? "" : "[" + logPrefix + "] ";
+                            AppendLog(pfx + e.Data, Color.FromArgb(226, 232, 240));
+                        }
+                    };
+                    proc.ErrorDataReceived += (s, e) =>
+                    {
+                        if (e.Data != null)
+                        {
+                            string pfx = string.IsNullOrEmpty(logPrefix) ? "" : "[" + logPrefix + "] ";
+                            AppendLog(pfx + e.Data, Color.FromArgb(251, 191, 36));
+                        }
+                    };
+
+                    proc.Start();
+                    proc.BeginOutputReadLine();
+                    proc.BeginErrorReadLine();
+                    proc.WaitForExit();
+                    return proc.ExitCode;
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendLog("Errore durante esecuzione processo (" + fileName + " " + arguments + "): " + ex.Message, Color.FromArgb(248, 113, 113));
+                return -1;
+            }
+        }
+
+        private void SafeDeleteDirectory(string targetDir)
+        {
+            if (!Directory.Exists(targetDir)) return;
+
+            for (int attempt = 1; attempt <= 3; attempt++)
+            {
+                try
+                {
+                    foreach (string file in Directory.GetFiles(targetDir, "*", SearchOption.AllDirectories))
+                    {
+                        try
+                        {
+                            File.SetAttributes(file, FileAttributes.Normal);
+                        }
+                        catch { }
+                    }
+                    Directory.Delete(targetDir, true);
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    if (attempt == 3)
+                    {
+                        throw new IOException("Impossibile eliminare completamente la cartella '" + targetDir + "': " + ex.Message, ex);
+                    }
+                    System.Threading.Thread.Sleep(300);
+                }
+            }
         }
 
         private async Task ExecuteInstallation(bool isRollback)
@@ -375,6 +517,16 @@ namespace StratumHeatmapInstaller
                     return;
                 }
             }
+            else
+            {
+                DialogResult confirm = MessageBox.Show(
+                    "Sei sicuro di voler disinstallare StratumHeatmap da Superset e ripristinare MainPreset?",
+                    "Conferma Rollback / Disinstallazione",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question
+                );
+                if (confirm != DialogResult.Yes) return;
+            }
 
             btnInstall.Enabled = false;
             btnRollback.Enabled = false;
@@ -387,19 +539,40 @@ namespace StratumHeatmapInstaller
                     lblStatus.Text = "Esecuzione Rollback / Disinstallazione in corso...";
                     await Task.Run(() => PerformRollback(supersetPath, frontendDir));
                     lblStatus.Text = "Rollback completato con successo.";
-                    MessageBox.Show("Plugin rimosso e MainPreset ripristinato con successo!", "Rollback Completato", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(
+                        "StratumHeatmap è stato rimosso e MainPreset ripristinato con successo!",
+                        "Rollback Completato",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information
+                    );
                 }
                 else
                 {
-                    lblStatus.Text = "Installazione e registrazione in corso...";
+                    lblStatus.Text = "Installazione completa da zero in corso...";
                     await Task.Run(() => PerformInstall(supersetPath, frontendDir, pluginPath));
                     lblStatus.Text = "Installazione completata con successo!";
-                    MessageBox.Show("StratumHeatmap è stato installato e registrato con successo in Apache Superset!\r\n\r\nPer visualizzarlo:\r\n- In Dev: npm run dev-server (in superset-frontend)\r\n- In Docker: docker compose -f docker-compose-non-dev.yml up -d --build superset", "Installazione Riuscita", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    string successMsg =
+                        "✅ Installazione da zero di StratumHeatmap completata con successo!\r\n\r\n" +
+                        "Riepilogo operazioni eseguite:\r\n" +
+                        "• Rimozione completa della versione precedente\r\n" +
+                        "• Copia pulita dei file del plugin in superset-frontend/plugins/\r\n" +
+                        "• Registrazione del plugin in MainPreset.ts (key: stratum_heatmap)\r\n" +
+                        (chkCleanCache.Checked ? "• Pulizia totale cache Webpack/Babel (.cache, .temp_cache, dist)\r\n" : "") +
+                        (chkBuildFrontend.Checked ? "• Ricompilazione Webpack frontend di Superset (npm run build)\r\n" : "") +
+                        (chkRestartDocker.Checked ? "• Comando di riavvio container Superset Docker\r\n" : "") +
+                        "\r\n" +
+                        "COME VISUALIZZARE IL GRAFICO NEL BROWSER:\r\n" +
+                        "1. Apri Apache Superset nel browser (es. http://localhost:8088 o https://...)\r\n" +
+                        "2. FONDAMENTALE: Esegui un Hard Refresh premendo CTRL + F5 (oppure apri una finestra in Incognito) per forzare lo svuotamento della cache del browser e caricare i nuovi bundle JavaScript.\r\n" +
+                        "3. Crea o modifica un grafico e cerca 'Stratum Heatmap' nella galleria!";
+
+                    MessageBox.Show(successMsg, "StratumHeatmap — Installazione Riuscita!", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
             catch (Exception ex)
             {
-                AppendLog("ERRORE: " + ex.Message, Color.FromArgb(248, 113, 113));
+                AppendLog("ERRORE CRITICO: " + ex.Message, Color.FromArgb(248, 113, 113));
                 lblStatus.Text = "Errore durante l'operazione.";
                 MessageBox.Show("Si è verificato un errore:\n" + ex.Message, "Errore Operazione", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -414,46 +587,37 @@ namespace StratumHeatmapInstaller
 
         private void PerformInstall(string supersetPath, string frontendDir, string pluginPath)
         {
-            AppendLog("=== INIZIO INSTALLAZIONE STRATUMHEATMAP ===", Color.FromArgb(56, 189, 248));
+            AppendLog("=== INIZIO INSTALLAZIONE / REINSTALLAZIONE DA ZERO STRATUMHEATMAP ===", Color.FromArgb(56, 189, 248));
             AppendLog("Superset Root: " + supersetPath, Color.White);
+            AppendLog("Frontend Dir:  " + frontendDir, Color.White);
             AppendLog("Plugin Source: " + pluginPath, Color.White);
 
-            // 1. Build preliminare se abilitata
+            // 1. Build preliminare del plugin se abilitata
             if (chkBuildPlugin.Checked && File.Exists(Path.Combine(pluginPath, "package.json")))
             {
-                AppendLog("Esecuzione npm run build nel plugin...", Color.FromArgb(250, 204, 21));
-                try
-                {
-                    ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", "/c npm run build")
-                    {
-                        WorkingDirectory = pluginPath,
-                        CreateNoWindow = true,
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true
-                    };
-                    using (Process p = Process.Start(psi))
-                    {
-                        p.WaitForExit(60000);
-                    }
-                    AppendLog("Build TypeScript del plugin completata.", Color.FromArgb(74, 222, 128));
-                }
-                catch (Exception ex)
-                {
-                    AppendLog("Avviso durante build del plugin: " + ex.Message, Color.FromArgb(250, 204, 21));
-                }
+                BuildPluginTypeScript(pluginPath);
             }
 
-            // 2. Copia dei file in plugins/superset-plugin-chart-stratum-heatmap
+            // 2. Rimozione versione precedente e reinstallazione da zero
             string targetPluginDir = Path.Combine(frontendDir, "plugins", "superset-plugin-chart-stratum-heatmap");
             if (Directory.Exists(targetPluginDir))
             {
-                AppendLog("Rimozione versione precedente in plugins/...", Color.FromArgb(148, 163, 184));
-                Directory.Delete(targetPluginDir, true);
+                AppendLog("Rilevata versione precedente in 'plugins/superset-plugin-chart-stratum-heatmap'.", Color.FromArgb(250, 204, 21));
+                if (chkCleanReinstall.Checked)
+                {
+                    AppendLog("Rimozione totale versione esistente in corso (Clean Reinstall)...", Color.FromArgb(250, 204, 21));
+                    SafeDeleteDirectory(targetPluginDir);
+                    AppendLog("Versione precedente eliminata con successo.", Color.FromArgb(74, 222, 128));
+                }
             }
-            Directory.CreateDirectory(targetPluginDir);
 
-            AppendLog("Copia file sorgenti, dist e configurazioni...", Color.FromArgb(56, 189, 248));
+            if (!Directory.Exists(targetPluginDir))
+            {
+                Directory.CreateDirectory(targetPluginDir);
+            }
+
+            // 3. Copia pulita da zero
+            AppendLog("Copia file sorgenti, dist e configurazioni da zero...", Color.FromArgb(56, 189, 248));
             string[] itemsToCopy = new string[] { "src", "dist", "package.json", "tsconfig.json", "README.md" };
             foreach (string item in itemsToCopy)
             {
@@ -462,18 +626,20 @@ namespace StratumHeatmapInstaller
                 if (Directory.Exists(src))
                 {
                     CopyDirectory(src, dst);
+                    AppendLog("  [+] Copiata cartella: " + item, Color.FromArgb(148, 163, 184));
                 }
                 else if (File.Exists(src))
                 {
                     File.Copy(src, dst, true);
+                    AppendLog("  [+] Copiato file:     " + item, Color.FromArgb(148, 163, 184));
                 }
             }
             AppendLog("File del plugin copiati in: " + targetPluginDir, Color.FromArgb(74, 222, 128));
 
-            // 3. Patch di MainPreset
+            // 4. Patch di MainPreset
             PatchMainPreset(frontendDir, false);
 
-            // 4. Pulizia Cache Webpack se richiesta
+            // 5. Pulizia Cache Webpack se richiesta
             if (chkCleanCache.Checked)
             {
                 AppendLog("Pulizia cache Webpack e dist obsolete...", Color.FromArgb(56, 189, 248));
@@ -487,13 +653,125 @@ namespace StratumHeatmapInstaller
                 {
                     if (Directory.Exists(c))
                     {
-                        try { Directory.Delete(c, true); AppendLog("Eliminata cache: " + Path.GetFileName(c), Color.FromArgb(74, 222, 128)); }
-                        catch { }
+                        try
+                        {
+                            SafeDeleteDirectory(c);
+                            AppendLog("Eliminata cache: " + Path.GetFileName(c), Color.FromArgb(74, 222, 128));
+                        }
+                        catch (Exception ex)
+                        {
+                            AppendLog("Avviso eliminazione cache " + Path.GetFileName(c) + ": " + ex.Message, Color.FromArgb(250, 204, 21));
+                        }
                     }
                 }
             }
 
+            // 6. Build Webpack frontend di Superset se richiesta
+            if (chkBuildFrontend.Checked)
+            {
+                BuildSupersetFrontend(frontendDir);
+            }
+
+            // 7. Riavvio Docker se richiesto
+            if (chkRestartDocker.Checked)
+            {
+                RestartDockerContainers(supersetPath);
+            }
+
             AppendLog("=== INSTALLAZIONE STRATUMHEATMAP COMPLETATA CON SUCCESSO! ===", Color.FromArgb(74, 222, 128));
+        }
+
+        private void BuildPluginTypeScript(string pluginPath)
+        {
+            AppendLog("Esecuzione compilazione TypeScript preliminare nel plugin (npm run build)...", Color.FromArgb(56, 189, 248));
+            int exitCode = RunProcessStreaming(pluginPath, "cmd.exe", "/c npm run build", "PLUGIN-BUILD");
+            if (exitCode == 0)
+            {
+                AppendLog("Compilazione TypeScript del plugin completata con successo.", Color.FromArgb(74, 222, 128));
+            }
+            else
+            {
+                AppendLog("Avviso durante compilazione TypeScript plugin (codice " + exitCode + "). Si prosegue con i file presenti.", Color.FromArgb(250, 204, 21));
+            }
+        }
+
+        private void BuildSupersetFrontend(string frontendDir)
+        {
+            AppendLog("--- AVVIO COMPILAZIONE WEBPACK SUPERSET (npm run build) ---", Color.FromArgb(56, 189, 248));
+            AppendLog("Cartella frontend: " + frontendDir, Color.White);
+            AppendLog("Attendere: la compilazione dei bundle Webpack di Superset richiede generalmente 1-3 minuti...", Color.FromArgb(250, 204, 21));
+
+            int exitCode = RunProcessStreaming(frontendDir, "cmd.exe", "/c npm run build", "WEBPACK");
+            if (exitCode == 0)
+            {
+                AppendLog("Compilazione Webpack frontend completata con successo!", Color.FromArgb(74, 222, 128));
+            }
+            else
+            {
+                AppendLog("Avviso: 'npm run build' frontend terminato con codice " + exitCode + ". Controlla i dettagli nel log sopra.", Color.FromArgb(250, 204, 21));
+            }
+        }
+
+        private void RestartDockerContainers(string supersetPath)
+        {
+            AppendLog("--- GESTIONE E RIAVVIO CONTAINER DOCKER SUPERSET ---", Color.FromArgb(56, 189, 248));
+
+            int checkDocker = RunProcessStreaming(supersetPath, "cmd.exe", "/c docker --version", "DOCKER-CHECK");
+            if (checkDocker != 0)
+            {
+                AppendLog("Docker CLI non trovato nel PATH di sistema. Riavvio container ignorato.", Color.FromArgb(250, 204, 21));
+                return;
+            }
+
+            bool hasNonDevCompose = File.Exists(Path.Combine(supersetPath, "docker-compose-non-dev.yml"));
+            bool hasStandardCompose = File.Exists(Path.Combine(supersetPath, "docker-compose.yml"));
+
+            int exitCode = -1;
+            if (hasNonDevCompose)
+            {
+                AppendLog("Trovato docker-compose-non-dev.yml. Tentativo restart superset...", Color.FromArgb(56, 189, 248));
+                exitCode = RunProcessStreaming(supersetPath, "cmd.exe", "/c docker compose -f docker-compose-non-dev.yml restart superset", "DOCKER");
+                if (exitCode != 0)
+                {
+                    AppendLog("Restart rapido non riuscito. Tentativo up -d --build superset...", Color.FromArgb(250, 204, 21));
+                    exitCode = RunProcessStreaming(supersetPath, "cmd.exe", "/c docker compose -f docker-compose-non-dev.yml up -d --build superset", "DOCKER");
+                }
+            }
+            else if (hasStandardCompose)
+            {
+                AppendLog("Trovato docker-compose.yml. Tentativo restart superset_app...", Color.FromArgb(56, 189, 248));
+                exitCode = RunProcessStreaming(supersetPath, "cmd.exe", "/c docker compose restart superset_app", "DOCKER");
+                if (exitCode != 0)
+                {
+                    AppendLog("Tentativo alternativo: docker compose restart superset...", Color.FromArgb(250, 204, 21));
+                    exitCode = RunProcessStreaming(supersetPath, "cmd.exe", "/c docker compose restart superset", "DOCKER");
+                }
+                if (exitCode != 0)
+                {
+                    AppendLog("Tentativo alternativo: docker compose up -d --build superset...", Color.FromArgb(250, 204, 21));
+                    exitCode = RunProcessStreaming(supersetPath, "cmd.exe", "/c docker compose up -d --build superset", "DOCKER");
+                }
+            }
+            else
+            {
+                AppendLog("Tentativo riavvio standard: docker compose restart superset_app...", Color.FromArgb(56, 189, 248));
+                exitCode = RunProcessStreaming(supersetPath, "cmd.exe", "/c docker compose restart superset_app", "DOCKER");
+                if (exitCode != 0)
+                {
+                    exitCode = RunProcessStreaming(supersetPath, "cmd.exe", "/c docker compose restart superset", "DOCKER");
+                }
+            }
+
+            if (exitCode == 0)
+            {
+                AppendLog("Container Superset Docker riavviato e aggiornato con successo!", Color.FromArgb(74, 222, 128));
+            }
+            else
+            {
+                AppendLog("Avviso Docker: comando terminato con codice " + exitCode + ". Il daemon Docker potrebbe non essere attivo o i container non avviati.", Color.FromArgb(250, 204, 21));
+                AppendLog("Puoi avviare manualmente Superset quando desideri con:", Color.White);
+                AppendLog("  cd \"" + supersetPath + "\" && docker compose -f docker-compose-non-dev.yml up -d --build superset", Color.FromArgb(56, 189, 248));
+            }
         }
 
         private void PerformRollback(string supersetPath, string frontendDir)
@@ -502,7 +780,7 @@ namespace StratumHeatmapInstaller
             string targetPluginDir = Path.Combine(frontendDir, "plugins", "superset-plugin-chart-stratum-heatmap");
             if (Directory.Exists(targetPluginDir))
             {
-                Directory.Delete(targetPluginDir, true);
+                SafeDeleteDirectory(targetPluginDir);
                 AppendLog("Rimossa cartella plugin: " + targetPluginDir, Color.FromArgb(74, 222, 128));
             }
 
@@ -513,7 +791,7 @@ namespace StratumHeatmapInstaller
                 string cacheDir = Path.Combine(frontendDir, "node_modules", ".cache");
                 if (Directory.Exists(cacheDir))
                 {
-                    try { Directory.Delete(cacheDir, true); } catch { }
+                    try { SafeDeleteDirectory(cacheDir); } catch { }
                 }
             }
             AppendLog("=== ROLLBACK COMPLETATO CON SUCCESSO ===", Color.FromArgb(74, 222, 128));
@@ -524,7 +802,9 @@ namespace StratumHeatmapInstaller
             string[] candidates = new string[]
             {
                 Path.Combine(frontendDir, "src", "visualizations", "presets", "MainPreset.ts"),
-                Path.Combine(frontendDir, "src", "visualizations", "presets", "MainPreset.js")
+                Path.Combine(frontendDir, "src", "visualizations", "presets", "MainPreset.js"),
+                Path.Combine(frontendDir, "src", "setup", "setupPlugins.ts"),
+                Path.Combine(frontendDir, "src", "setup", "setupPlugins.js")
             };
 
             string presetFile = null;
@@ -535,7 +815,7 @@ namespace StratumHeatmapInstaller
 
             if (presetFile == null)
             {
-                throw new FileNotFoundException("Impossibile trovare MainPreset.ts/js nel frontend!");
+                throw new FileNotFoundException("Impossibile trovare MainPreset.ts/js o setupPlugins.ts/js nel frontend!");
             }
 
             string bakFile = presetFile + ".bak";
@@ -547,17 +827,57 @@ namespace StratumHeatmapInstaller
 
             string content = File.ReadAllText(presetFile, Encoding.UTF8);
 
-            // Rimuovi vecchie iniezioni
+            // Rimuovi vecchie iniezioni di import e registrazione
             content = Regex.Replace(content, @"import\s*\{[^}]*StratumHeatmap(?:Chart)?Plugin[^}]*\}\s*from\s*['""][^'""]*superset-plugin-chart-stratum-heatmap[^'""]*['""];?\r?\n?", "");
             content = Regex.Replace(content, @"[ \t]*new\s+StratumHeatmap(?:Chart)?Plugin\(\)\.configure\(\{[\s\S]*?\}\)(\.register\(\))?,?\r?\n?", "");
 
             if (!isRollback)
             {
-                string importLine = "import { StratumHeatmapChartPlugin } from '../../../plugins/superset-plugin-chart-stratum-heatmap/src';\r\n";
-                string registerLine = "        new StratumHeatmapChartPlugin().configure({ key: 'stratum_heatmap' }).register(),\r\n";
+                string targetImport = "import { StratumHeatmapChartPlugin } from '../../../plugins/superset-plugin-chart-stratum-heatmap/src';";
+                string targetRegister = "        new StratumHeatmapChartPlugin().configure({ key: 'stratum_heatmap' }).register(),";
 
-                content = importLine + content;
-                content = Regex.Replace(content, @"(plugins\s*:\s*\[)", "$1\r\n" + registerLine);
+                string[] lines = content.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None);
+                string nl = content.Contains("\r\n") ? "\r\n" : "\n";
+                var lineList = new System.Collections.Generic.List<string>(lines);
+
+                int lastImportIdx = -1;
+                for (int i = 0; i < lineList.Count; i++)
+                {
+                    if (lineList[i].TrimStart().StartsWith("import "))
+                    {
+                        lastImportIdx = i;
+                    }
+                }
+
+                if (lastImportIdx >= 0)
+                {
+                    lineList.Insert(lastImportIdx + 1, targetImport);
+                }
+                else
+                {
+                    lineList.Insert(0, targetImport);
+                }
+
+                int pluginsIdx = -1;
+                for (int i = 0; i < lineList.Count; i++)
+                {
+                    if (Regex.IsMatch(lineList[i], @"plugins\s*:\s*\["))
+                    {
+                        pluginsIdx = i;
+                        break;
+                    }
+                }
+
+                if (pluginsIdx >= 0)
+                {
+                    lineList.Insert(pluginsIdx + 1, targetRegister);
+                }
+                else
+                {
+                    lineList.Add(targetRegister);
+                }
+
+                content = string.Join(nl, lineList.ToArray());
                 AppendLog("Registrato StratumHeatmapChartPlugin in " + Path.GetFileName(presetFile), Color.FromArgb(74, 222, 128));
             }
             else
@@ -565,7 +885,7 @@ namespace StratumHeatmapInstaller
                 AppendLog("Rimosso StratumHeatmapChartPlugin da " + Path.GetFileName(presetFile), Color.FromArgb(74, 222, 128));
             }
 
-            File.WriteAllText(presetFile, content, Encoding.UTF8);
+            File.WriteAllText(presetFile, content, new UTF8Encoding(false));
         }
 
         private void CopyDirectory(string sourceDir, string destDir)
@@ -578,7 +898,7 @@ namespace StratumHeatmapInstaller
             foreach (string subDir in Directory.GetDirectories(sourceDir))
             {
                 string name = Path.GetFileName(subDir);
-                if (name == "node_modules" || name == ".git" || name == ".turbo") continue;
+                if (name == "node_modules" || name == ".git" || name == ".turbo" || name == ".cache") continue;
                 CopyDirectory(subDir, Path.Combine(destDir, name));
             }
         }

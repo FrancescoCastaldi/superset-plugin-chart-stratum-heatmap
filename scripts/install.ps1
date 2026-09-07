@@ -13,6 +13,9 @@ param (
     [Parameter(Position = 1)]
     [string]$PluginPath,
 
+    [switch]$CleanReinstall,
+    [switch]$RebuildFrontend,
+    [switch]$RestartDocker,
     [switch]$SkipBuild,
     [switch]$NoDocker,
     [switch]$SkipCleanCache,
