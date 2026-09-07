@@ -74,6 +74,8 @@ UI.banner();
 function findSupersetCandidates() {
   const home = process.env.USERPROFILE || process.env.HOME || '';
   const candidates = [
+    'C:\\Users\\admmaps\\superset_6_1_0\\superset',
+    path.join(home, 'superset_6_1_0', 'superset'),
     path.resolve('D:\\Sviluppo\\superset'),
     path.resolve(pluginDir, '..', 'superset'),
     path.resolve(pluginDir, '..', 'apache-superset'),
