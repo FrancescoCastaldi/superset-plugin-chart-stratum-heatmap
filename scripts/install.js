@@ -181,9 +181,9 @@ function step1CleanPrevious(frontendDir) {
         const originalContent = content;
 
         // Rimuove eventuali vecchi import
-        content = content.replace(/import\s*\{\s*StratumHeatmapPlugin\s*\}\s*from\s*['"][^'"]*superset-plugin-chart-stratum-heatmap[^'"]*['"];?\r?\n?/g, '');
+        content = content.replace(/import\s*\{[^}]*StratumHeatmap(?:Chart)?Plugin[^}]*\}\s*from\s*['"][^'"]*superset-plugin-chart-stratum-heatmap[^'"]*['"];?\r?\n?/g, '');
         // Rimuove eventuali registrazioni duplicate
-        content = content.replace(/[ \t]*new\s+StratumHeatmapPlugin\(\)\.configure\(\{[\s\S]*?\}\)\.register\(\),?\r?\n?/g, '');
+        content = content.replace(/[ \t]*new\s+StratumHeatmap(?:Chart)?Plugin\(\)\.configure\(\{[\s\S]*?\}\)(?:\.register\(\))?,?\r?\n?/g, '');
 
         if (content !== originalContent) {
           fs.writeFileSync(presetFile, content, 'utf8');
@@ -273,13 +273,25 @@ function step4PatchPreset(frontendDir) {
 
   let content = fs.readFileSync(presetFile, 'utf8');
 
-  const importStmt = "import { StratumHeatmapPlugin } from '../../../plugins/superset-plugin-chart-stratum-heatmap/src';\n";
-  const registerStmt = "        new StratumHeatmapPlugin().configure({ key: 'stratum_heatmap' }).register(),\n";
+  const importStmt = "import { StratumHeatmapChartPlugin } from '../../../plugins/superset-plugin-chart-stratum-heatmap/src';\n";
+  const registerStmt = "        new StratumHeatmapChartPlugin().configure({ key: 'stratum_heatmap' }).register(),\n";
 
-  if (content.includes('StratumHeatmapPlugin')) {
-    UI.warn(`StratumHeatmapPlugin già registrato in ${path.basename(presetFile)}.`);
+  const importMatches = content.match(/from\s*['"][^'"]*superset-plugin-chart-stratum-heatmap/g) || [];
+  const registerMatches = content.match(/new\s+StratumHeatmap(?:Chart)?Plugin/g) || [];
+
+  if (
+    content.includes('StratumHeatmapChartPlugin') &&
+    content.includes("new StratumHeatmapChartPlugin().configure({ key: 'stratum_heatmap' }).register()") &&
+    importMatches.length === 1 &&
+    registerMatches.length === 1
+  ) {
+    UI.info(`StratumHeatmapChartPlugin già registrato correttamente in ${path.basename(presetFile)} (idempotente).`);
     return;
   }
+
+  // Rimuove eventuali registrazioni/import obsolete prima di riapplicare
+  content = content.replace(/import\s*\{[^}]*StratumHeatmap(?:Chart)?Plugin[^}]*\}\s*from\s*['"][^'"]*superset-plugin-chart-stratum-heatmap[^'"]*['"];?\r?\n?/g, '');
+  content = content.replace(/[ \t]*new\s+StratumHeatmap(?:Chart)?Plugin\(\)\.configure\(\{[\s\S]*?\}\)(?:\.register\(\))?,?\r?\n?/g, '');
 
   // Iniezione import in cima o dopo l'ultimo import
   const lines = content.split(/\r?\n/);
@@ -291,7 +303,7 @@ function step4PatchPreset(frontendDir) {
   }
 
   if (lastImportIndex >= 0) {
-    lines.splice(lastImportIndex + 1, 0, "import { StratumHeatmapPlugin } from '../../../plugins/superset-plugin-chart-stratum-heatmap/src';");
+    lines.splice(lastImportIndex + 1, 0, "import { StratumHeatmapChartPlugin } from '../../../plugins/superset-plugin-chart-stratum-heatmap/src';");
     content = lines.join('\n');
   } else {
     content = importStmt + content;
@@ -303,11 +315,11 @@ function step4PatchPreset(frontendDir) {
     const insertPos = pluginsMatch.index + pluginsMatch[0].length;
     content = content.slice(0, insertPos) + '\n' + registerStmt + content.slice(insertPos);
   } else {
-    content += `\nnew StratumHeatmapPlugin().configure({ key: 'stratum_heatmap' }).register();\n`;
+    content += `\nnew StratumHeatmapChartPlugin().configure({ key: 'stratum_heatmap' }).register();\n`;
   }
 
   fs.writeFileSync(presetFile, content, 'utf8');
-  UI.success(`Registrato StratumHeatmapPlugin (key: 'stratum_heatmap') in ${path.basename(presetFile)}`);
+  UI.success(`Registrato StratumHeatmapChartPlugin (key: 'stratum_heatmap') in ${path.basename(presetFile)}`);
 }
 
 function step5SafetyCleanup(frontendDir) {
@@ -361,8 +373,18 @@ function step6PrintInstructions() {
 
 // Inizializzazione interattiva o da argomenti
 const args = process.argv.slice(2);
-if (args.length > 0) {
-  supersetDir = path.resolve(args[0]);
+let argSupersetPath = '';
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === '--superset-path' && args[i + 1]) {
+    argSupersetPath = args[i + 1];
+    i++;
+  } else if (!args[i].startsWith('--') && !argSupersetPath) {
+    argSupersetPath = args[i];
+  }
+}
+
+if (argSupersetPath) {
+  supersetDir = path.resolve(argSupersetPath);
   startInstallation();
 } else {
   const detected = findSupersetCandidates();

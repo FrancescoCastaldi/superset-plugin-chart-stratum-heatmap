@@ -19,7 +19,9 @@
     "clean": "rimraf dist",
     "test": "vitest run",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
-    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md,css,yml,yaml}\""
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md,css,yml,yaml}\"",
+    "install:plugin": "powershell -ExecutionPolicy Bypass -File ./install-plugin.ps1",
+    "install:plugin:node": "node ./scripts/install.js"
   },
   "keywords": [
     "superset",

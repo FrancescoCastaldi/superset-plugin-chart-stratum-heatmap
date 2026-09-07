@@ -27,7 +27,9 @@ if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
 def get_superset_candidates() -> list[Path]:
     home = Path.home()
     candidates = [
+        Path(r"C:\Users\admmaps\superset_6_1_0\superset"),
         Path(r"D:\Sviluppo\superset"),
+        (home / "superset_6_1_0" / "superset"),
         Path(r"..\superset").resolve(),
         Path(r"..\apache-superset").resolve(),
         Path(r"..\superset-6.1.0").resolve(),
@@ -170,22 +172,37 @@ def patch_main_preset(preset_file: Path):
     with open(preset_file, "r", encoding="utf-8") as f:
         content = f.read()
 
-    # Rimuovi eventuali registrazioni precedenti duplicate
+    target_import = "import { StratumHeatmapChartPlugin } from '../../../plugins/superset-plugin-chart-stratum-heatmap/src';"
+    target_register = "        new StratumHeatmapChartPlugin().configure({ key: 'stratum_heatmap' }).register(),"
+
+    import_matches = re.findall(r"from\s*['\"][^'\"]*superset-plugin-chart-stratum-heatmap", content)
+    register_matches = re.findall(r"new\s+StratumHeatmap(?:Chart)?Plugin", content)
+
+    if (
+        target_import in content
+        and "new StratumHeatmapChartPlugin().configure({ key: 'stratum_heatmap' }).register()" in content
+        and len(import_matches) == 1
+        and len(register_matches) == 1
+    ):
+        log_info(f"Preset {preset_file.name} già configurato correttamente (idempotente).")
+        return
+
+    # Rimuovi eventuali registrazioni/import precedenti o duplicati
     content = re.sub(
-        r"import\s*\{\s*StratumHeatmapPlugin\s*\}\s*from\s*['\"][^'\"]*superset-plugin-chart-stratum-heatmap[^'\"]*['\"];?\r?\n?",
+        r"import\s*\{[^}]*StratumHeatmap(?:Chart)?Plugin[^}]*\}\s*from\s*['\"][^'\"]*superset-plugin-chart-stratum-heatmap[^'\"]*['\"];?\r?\n?",
         "",
         content
     )
     content = re.sub(
-        r"[ \t]*new\s+StratumHeatmapPlugin\(\)\.configure\(\{[\s\S]*?\}\)\.register\(\),?\r?\n?",
+        r"[ \t]*new\s+StratumHeatmap(?:Chart)?Plugin\(\)\.configure\(\{[\s\S]*?\}\)(?:\.register\(\))?,?\r?\n?",
         "",
         content
     )
 
-    import_stmt = "import { StratumHeatmapPlugin } from '../../../plugins/superset-plugin-chart-stratum-heatmap/src';\n"
-    register_stmt = "        new StratumHeatmapPlugin().configure({ key: 'stratum_heatmap' }),\n"
+    import_stmt = target_import + "\n"
+    register_stmt = target_register + "\n"
 
-    # Iniezione import
+    # Iniezione import subito dopo l'ultimo import
     lines = content.splitlines(keepends=True)
     last_import_idx = -1
     for idx, line in enumerate(lines):
@@ -203,12 +220,12 @@ def patch_main_preset(preset_file: Path):
         insert_pos = plugins_match.end()
         content = content[:insert_pos] + "\n" + register_stmt + content[insert_pos:]
     else:
-        content += f"\nnew StratumHeatmapPlugin().configure({{ key: 'stratum_heatmap' }}).register();\n"
+        content += f"\nnew StratumHeatmapChartPlugin().configure({{ key: 'stratum_heatmap' }}).register();\n"
 
     with open(preset_file, "w", encoding="utf-8") as f:
         f.write(content)
 
-    log_success(f"Registrato StratumHeatmapPlugin (key: 'stratum_heatmap') in {preset_file.name}")
+    log_success(f"Registrato StratumHeatmapChartPlugin (key: 'stratum_heatmap') in {preset_file.name}")
 
 
 def trigger_docker_build(superset_root: Path, compose_file: str = "docker-compose-non-dev.yml"):

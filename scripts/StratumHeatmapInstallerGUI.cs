@@ -303,10 +303,11 @@ namespace StratumHeatmapInstaller
             // 2. Auto-detect Superset Path
             string[] candidates = new string[]
             {
+                @"C:\Users\admmaps\superset_6_1_0\superset",
                 @"D:\Sviluppo\superset",
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "superset_6_1_0", "superset"),
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Desktop", "superset"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "superset"),
-                @"C:\Users\admmaps\superset_6_1_0\superset"
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "superset")
             };
 
             string detectedSuperset = null;
@@ -547,21 +548,21 @@ namespace StratumHeatmapInstaller
             string content = File.ReadAllText(presetFile, Encoding.UTF8);
 
             // Rimuovi vecchie iniezioni
-            content = Regex.Replace(content, @"import\s*\{\s*StratumHeatmapPlugin\s*\}\s*from\s*['""][^'""]*superset-plugin-chart-stratum-heatmap[^'""]*['""];?\r?\n?", "");
-            content = Regex.Replace(content, @"[ \t]*new\s+StratumHeatmapPlugin\(\)\.configure\(\{[\s\S]*?\}\)(\.register\(\))?,?\r?\n?", "");
+            content = Regex.Replace(content, @"import\s*\{[^}]*StratumHeatmap(?:Chart)?Plugin[^}]*\}\s*from\s*['""][^'""]*superset-plugin-chart-stratum-heatmap[^'""]*['""];?\r?\n?", "");
+            content = Regex.Replace(content, @"[ \t]*new\s+StratumHeatmap(?:Chart)?Plugin\(\)\.configure\(\{[\s\S]*?\}\)(\.register\(\))?,?\r?\n?", "");
 
             if (!isRollback)
             {
-                string importLine = "import { StratumHeatmapPlugin } from '../../../plugins/superset-plugin-chart-stratum-heatmap/src';\r\n";
-                string registerLine = "        new StratumHeatmapPlugin().configure({ key: 'stratum_heatmap' }),\r\n";
+                string importLine = "import { StratumHeatmapChartPlugin } from '../../../plugins/superset-plugin-chart-stratum-heatmap/src';\r\n";
+                string registerLine = "        new StratumHeatmapChartPlugin().configure({ key: 'stratum_heatmap' }).register(),\r\n";
 
                 content = importLine + content;
                 content = Regex.Replace(content, @"(plugins\s*:\s*\[)", "$1\r\n" + registerLine);
-                AppendLog("Registrato StratumHeatmapPlugin in " + Path.GetFileName(presetFile), Color.FromArgb(74, 222, 128));
+                AppendLog("Registrato StratumHeatmapChartPlugin in " + Path.GetFileName(presetFile), Color.FromArgb(74, 222, 128));
             }
             else
             {
-                AppendLog("Rimosso StratumHeatmapPlugin da " + Path.GetFileName(presetFile), Color.FromArgb(74, 222, 128));
+                AppendLog("Rimosso StratumHeatmapChartPlugin da " + Path.GetFileName(presetFile), Color.FromArgb(74, 222, 128));
             }
 
             File.WriteAllText(presetFile, content, Encoding.UTF8);
