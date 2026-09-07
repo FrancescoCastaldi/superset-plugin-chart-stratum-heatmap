@@ -23,6 +23,9 @@ namespace StratumHeatmapInstaller
         private CheckBox chkRestartDocker;
         private Button btnInstall;
         private Button btnRollback;
+        private Button btnQuickSync;
+        private Button btnBuildWebpack;
+        private Button btnRestartDockerOnly;
         private ProgressBar progressBar;
         private Label lblStatus;
         private RichTextBox txtLog;
@@ -241,7 +244,30 @@ namespace StratumHeatmapInstaller
             btnRollback.Size = new Size(220, 44);
             btnRollback.Click += async (s, e) => await ExecuteInstallation(true);
             mainPanel.Controls.Add(btnRollback);
-            currentY += 54;
+            currentY += 50;
+
+            // Seconda riga di azioni rapide
+            btnQuickSync = CreateStyledButton("⚡ Aggiorna File Plugin (Sync Rapido)", Color.FromArgb(16, 185, 129), Color.White);
+            btnQuickSync.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            btnQuickSync.Location = new Point(0, currentY);
+            btnQuickSync.Size = new Size(220, 36);
+            btnQuickSync.Click += async (s, e) => await ExecuteQuickSync();
+            mainPanel.Controls.Add(btnQuickSync);
+
+            btnBuildWebpack = CreateStyledButton("📦 Compila Solo Frontend (npm build)", Color.FromArgb(124, 58, 237), Color.White);
+            btnBuildWebpack.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            btnBuildWebpack.Location = new Point(228, currentY);
+            btnBuildWebpack.Size = new Size(230, 36);
+            btnBuildWebpack.Click += async (s, e) => await ExecuteBuildWebpackOnly();
+            mainPanel.Controls.Add(btnBuildWebpack);
+
+            btnRestartDockerOnly = CreateStyledButton("🐳 Riavvia Docker Superset", Color.FromArgb(14, 116, 144), Color.White);
+            btnRestartDockerOnly.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            btnRestartDockerOnly.Location = new Point(466, currentY);
+            btnRestartDockerOnly.Size = new Size(204, 36);
+            btnRestartDockerOnly.Click += async (s, e) => await ExecuteRestartDockerOnly();
+            mainPanel.Controls.Add(btnRestartDockerOnly);
+            currentY += 46;
 
             // Progress Bar & Status
             progressBar = new ProgressBar
@@ -528,8 +554,7 @@ namespace StratumHeatmapInstaller
                 if (confirm != DialogResult.Yes) return;
             }
 
-            btnInstall.Enabled = false;
-            btnRollback.Enabled = false;
+            SetButtonsEnabled(false);
             progressBar.Style = ProgressBarStyle.Marquee;
 
             try
@@ -580,8 +605,158 @@ namespace StratumHeatmapInstaller
             {
                 progressBar.Style = ProgressBarStyle.Continuous;
                 progressBar.Value = 100;
-                btnInstall.Enabled = true;
-                btnRollback.Enabled = true;
+                SetButtonsEnabled(true);
+            }
+        }
+
+        private void SetButtonsEnabled(bool enabled)
+        {
+            btnInstall.Enabled = enabled;
+            btnRollback.Enabled = enabled;
+            if (btnQuickSync != null) btnQuickSync.Enabled = enabled;
+            if (btnBuildWebpack != null) btnBuildWebpack.Enabled = enabled;
+            if (btnRestartDockerOnly != null) btnRestartDockerOnly.Enabled = enabled;
+        }
+
+        private async Task ExecuteQuickSync()
+        {
+            string supersetPath = txtSupersetPath.Text.Trim();
+            string pluginPath = txtPluginPath.Text.Trim();
+
+            if (string.IsNullOrEmpty(supersetPath) || !Directory.Exists(supersetPath))
+            {
+                MessageBox.Show("Percorso Superset non valido o inesistente!", "Errore Percorso", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            string frontendDir = Path.Combine(supersetPath, "superset-frontend");
+            if (!Directory.Exists(frontendDir) || !File.Exists(Path.Combine(frontendDir, "package.json")))
+            {
+                MessageBox.Show("Impossibile trovare 'superset-frontend/package.json' all'interno di:\n" + supersetPath, "Superset non valido", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(pluginPath) || !Directory.Exists(pluginPath))
+            {
+                MessageBox.Show("Percorso del Plugin non valido o inesistente!", "Errore Percorso", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            SetButtonsEnabled(false);
+            progressBar.Style = ProgressBarStyle.Marquee;
+
+            try
+            {
+                lblStatus.Text = "Sincronizzazione rapida del plugin in corso...";
+                await Task.Run(() =>
+                {
+                    AppendLog("=== AVVIO AGGIORNAMENTO RAPIDO STRATUMHEATMAP ===", Color.FromArgb(56, 189, 248));
+                    BuildPluginTypeScript(pluginPath);
+                    string targetPluginDir = Path.Combine(frontendDir, "plugins", "superset-plugin-chart-stratum-heatmap");
+                    if (!Directory.Exists(targetPluginDir)) Directory.CreateDirectory(targetPluginDir);
+                    string[] itemsToCopy = new string[] { "src", "dist", "package.json", "tsconfig.json", "README.md" };
+                    foreach (string item in itemsToCopy)
+                    {
+                        string src = Path.Combine(pluginPath, item);
+                        string dst = Path.Combine(targetPluginDir, item);
+                        if (Directory.Exists(src))
+                        {
+                            CopyDirectory(src, dst);
+                            AppendLog("  [+] Sincronizzata cartella: " + item, Color.FromArgb(148, 163, 184));
+                        }
+                        else if (File.Exists(src))
+                        {
+                            File.Copy(src, dst, true);
+                            AppendLog("  [+] Sincronizzato file:     " + item, Color.FromArgb(148, 163, 184));
+                        }
+                    }
+                    PatchMainPreset(frontendDir, false);
+                    AppendLog("Sincronizzazione file plugin completata!", Color.FromArgb(74, 222, 128));
+                });
+                lblStatus.Text = "Aggiornamento file completato!";
+                MessageBox.Show("File del plugin aggiornati e sincronizzati in Superset con successo!\nSe Superset è in esecuzione con Webpack dev-server, le modifiche sono già attive (Hard Refresh CTRL+F5).\nSe Superset è in produzione, esegui 'Compila Solo Frontend' o 'Riavvia Docker'.", "Sync Completato", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                AppendLog("ERRORE: " + ex.Message, Color.FromArgb(248, 113, 113));
+                MessageBox.Show("Errore durante la sincronizzazione: " + ex.Message, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                progressBar.Style = ProgressBarStyle.Continuous;
+                progressBar.Value = 100;
+                SetButtonsEnabled(true);
+            }
+        }
+
+        private async Task ExecuteBuildWebpackOnly()
+        {
+            string supersetPath = txtSupersetPath.Text.Trim();
+            if (string.IsNullOrEmpty(supersetPath) || !Directory.Exists(supersetPath))
+            {
+                MessageBox.Show("Percorso Superset non valido o inesistente!", "Errore Percorso", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            string frontendDir = Path.Combine(supersetPath, "superset-frontend");
+            if (!Directory.Exists(frontendDir))
+            {
+                MessageBox.Show("Impossibile trovare 'superset-frontend'!", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            SetButtonsEnabled(false);
+            progressBar.Style = ProgressBarStyle.Marquee;
+
+            try
+            {
+                lblStatus.Text = "Compilazione Webpack frontend in corso (npm run build)...";
+                await Task.Run(() => BuildSupersetFrontend(frontendDir));
+                lblStatus.Text = "Compilazione Webpack completata!";
+                MessageBox.Show("Compilazione Webpack frontend completata con successo!\nEsegui un Hard Refresh (CTRL+F5) nel browser per caricare i nuovi bundle.", "Webpack Completato", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                AppendLog("ERRORE WEBPACK: " + ex.Message, Color.FromArgb(248, 113, 113));
+                MessageBox.Show("Errore durante Webpack: " + ex.Message, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                progressBar.Style = ProgressBarStyle.Continuous;
+                progressBar.Value = 100;
+                SetButtonsEnabled(true);
+            }
+        }
+
+        private async Task ExecuteRestartDockerOnly()
+        {
+            string supersetPath = txtSupersetPath.Text.Trim();
+            if (string.IsNullOrEmpty(supersetPath) || !Directory.Exists(supersetPath))
+            {
+                MessageBox.Show("Percorso Superset non valido o inesistente!", "Errore Percorso", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            SetButtonsEnabled(false);
+            progressBar.Style = ProgressBarStyle.Marquee;
+
+            try
+            {
+                lblStatus.Text = "Riavvio container Docker Superset in corso...";
+                await Task.Run(() => RestartDockerContainers(supersetPath));
+                lblStatus.Text = "Operazione Docker completata!";
+                MessageBox.Show("Comando Docker completato!\nControlla il log di console sopra per verificare lo stato dei container.", "Docker Completato", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                AppendLog("ERRORE DOCKER: " + ex.Message, Color.FromArgb(248, 113, 113));
+                MessageBox.Show("Errore durante operazione Docker: " + ex.Message, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                progressBar.Style = ProgressBarStyle.Continuous;
+                progressBar.Value = 100;
+                SetButtonsEnabled(true);
             }
         }
 
@@ -683,8 +858,18 @@ namespace StratumHeatmapInstaller
 
         private void BuildPluginTypeScript(string pluginPath)
         {
-            AppendLog("Esecuzione compilazione TypeScript preliminare nel plugin (npm run build)...", Color.FromArgb(56, 189, 248));
-            int exitCode = RunProcessStreaming(pluginPath, "cmd.exe", "/c npm run build", "PLUGIN-BUILD");
+            AppendLog("Esecuzione compilazione TypeScript del plugin...", Color.FromArgb(56, 189, 248));
+            string tscLib = Path.Combine(pluginPath, "node_modules", "typescript", "lib", "tsc.js");
+            int exitCode = -1;
+            if (File.Exists(tscLib))
+            {
+                exitCode = RunProcessStreaming(pluginPath, "cmd.exe", "/c node \"" + tscLib + "\" --build", "PLUGIN-BUILD");
+            }
+            else
+            {
+                exitCode = RunProcessStreaming(pluginPath, "cmd.exe", "/c npm run build", "PLUGIN-BUILD");
+            }
+
             if (exitCode == 0)
             {
                 AppendLog("Compilazione TypeScript del plugin completata con successo.", Color.FromArgb(74, 222, 128));
