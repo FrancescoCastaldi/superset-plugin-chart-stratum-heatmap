@@ -225,8 +225,8 @@ namespace StratumHeatmapInstaller
 
             chkRestartDocker = new CheckBox
             {
-                Text = "Riavvia automaticamente container Superset Docker (docker compose restart/up)",
-                Checked = true,
+                Text = "Riavvia container Superset Docker (opzionale, NON necessario se Superset legge dist)",
+                Checked = false,
                 Location = new Point(2, currentY),
                 AutoSize = true,
                 ForeColor = Color.FromArgb(51, 65, 85)
