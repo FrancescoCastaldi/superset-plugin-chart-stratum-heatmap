@@ -214,8 +214,8 @@ namespace StratumHeatmapInstaller
 
             chkBuildFrontend = new CheckBox
             {
-                Text = "Compilazione Webpack frontend di Superset (npm run build in superset-frontend)",
-                Checked = true,
+                Text = "Compila Webpack di Superset (npm run build - NON necessario se usi Docker o sync rapido)",
+                Checked = false,
                 Location = new Point(2, currentY),
                 AutoSize = true,
                 ForeColor = Color.FromArgb(51, 65, 85)
