@@ -1,6 +1,8 @@
 node_modules/
 dist/
 *.log
+installer_log.txt
+*log.txt
 *.bak
 .DS_Store
 Thumbs.db

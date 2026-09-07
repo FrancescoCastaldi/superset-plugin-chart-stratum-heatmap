@@ -29,6 +29,9 @@ namespace StratumHeatmapInstaller
         private ProgressBar progressBar;
         private Label lblStatus;
         private RichTextBox txtLog;
+        private Button btnOpenLog;
+        private Button btnClearLog;
+        private string logFilePath;
 
         [STAThread]
         public static void Main()
@@ -41,6 +44,7 @@ namespace StratumHeatmapInstaller
         public InstallerForm()
         {
             InitializeComponent();
+            InitLogFile();
             AutoDetectPaths();
         }
 
@@ -297,11 +301,27 @@ namespace StratumHeatmapInstaller
                 Text = "Console Log di Operazione (Streaming in Tempo Reale):",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(30, 41, 59),
-                Location = new Point(0, currentY),
+                Location = new Point(0, currentY + 3),
                 AutoSize = true
             };
             mainPanel.Controls.Add(lblLogTitle);
-            currentY += 22;
+
+            btnOpenLog = CreateStyledButton("📂 Apri File di Log", Color.FromArgb(71, 85, 105), Color.White);
+            btnOpenLog.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            btnOpenLog.Location = new Point(480, currentY);
+            btnOpenLog.Size = new Size(130, 26);
+            btnOpenLog.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnOpenLog.Click += (s, e) => OpenLogFile();
+            mainPanel.Controls.Add(btnOpenLog);
+
+            btnClearLog = CreateStyledButton("🧹 Pulisci", Color.FromArgb(148, 163, 184), Color.FromArgb(15, 23, 42));
+            btnClearLog.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            btnClearLog.Location = new Point(616, currentY);
+            btnClearLog.Size = new Size(84, 26);
+            btnClearLog.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnClearLog.Click += (s, e) => { txtLog.Clear(); AppendLog("Log a schermo ripulito.", Color.FromArgb(148, 163, 184)); };
+            mainPanel.Controls.Add(btnClearLog);
+            currentY += 30;
 
             txtLog = new RichTextBox
             {
@@ -407,6 +427,29 @@ namespace StratumHeatmapInstaller
                 AppendLog("Nessun Superset rilevato automaticamente. Seleziona la cartella con 'Sfoglia...'", Color.FromArgb(250, 204, 21));
             }
             AppendLog("Cartella Plugin configurata: " + txtPluginPath.Text, Color.FromArgb(56, 189, 248));
+            AppendLog("File di log persistente: " + (logFilePath ?? "installer_log.txt"), Color.FromArgb(148, 163, 184));
+        }
+
+        private static readonly object _logLock = new object();
+
+        private void InitLogFile()
+        {
+            try
+            {
+                string baseLog = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "installer_log.txt");
+                File.AppendAllText(baseLog, string.Format("\r\n================================================================================\r\n[{0:yyyy-MM-dd HH:mm:ss}] Avvio StratumHeatmap Installer GUI\r\nCartella base: {1}\r\n================================================================================\r\n", DateTime.Now, AppDomain.CurrentDomain.BaseDirectory), Encoding.UTF8);
+                logFilePath = baseLog;
+            }
+            catch
+            {
+                try
+                {
+                    string tempLog = Path.Combine(Path.GetTempPath(), "stratum_installer_log.txt");
+                    File.AppendAllText(tempLog, string.Format("\r\n================================================================================\r\n[{0:yyyy-MM-dd HH:mm:ss}] Avvio StratumHeatmap Installer GUI\r\nCartella base: {1} (fallback su TEMP)\r\n================================================================================\r\n", DateTime.Now, AppDomain.CurrentDomain.BaseDirectory), Encoding.UTF8);
+                    logFilePath = tempLog;
+                }
+                catch { }
+            }
         }
 
         private void AppendLog(string message, Color color)
@@ -436,6 +479,75 @@ namespace StratumHeatmapInstaller
             txtLog.AppendText(message + "\r\n");
             txtLog.SelectionStart = txtLog.TextLength;
             txtLog.ScrollToCaret();
+
+            // Scrittura persistente su file di log
+            WriteToLogFile("[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "] " + message);
+        }
+
+        private void WriteToLogFile(string text)
+        {
+            lock (_logLock)
+            {
+                try
+                {
+                    if (string.IsNullOrEmpty(logFilePath))
+                    {
+                        InitLogFile();
+                    }
+                    if (!string.IsNullOrEmpty(logFilePath))
+                    {
+                        File.AppendAllText(logFilePath, text + "\r\n", Encoding.UTF8);
+                    }
+                }
+                catch
+                {
+                    try
+                    {
+                        string tempLog = Path.Combine(Path.GetTempPath(), "stratum_installer_log.txt");
+                        File.AppendAllText(tempLog, text + "\r\n", Encoding.UTF8);
+                        logFilePath = tempLog;
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        private void OpenLogFile()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(logFilePath))
+                {
+                    logFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "installer_log.txt");
+                }
+
+                if (!File.Exists(logFilePath))
+                {
+                    string tempLog = Path.Combine(Path.GetTempPath(), "stratum_installer_log.txt");
+                    if (File.Exists(tempLog))
+                    {
+                        logFilePath = tempLog;
+                    }
+                }
+
+                if (File.Exists(logFilePath))
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "notepad.exe",
+                        Arguments = "\"" + logFilePath + "\"",
+                        UseShellExecute = true
+                    });
+                }
+                else
+                {
+                    MessageBox.Show("Il file di log non esiste ancora o nessun evento è stato registrato.\nPercorso: " + logFilePath, "File di Log", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Impossibile aprire il file di log:\n" + ex.Message, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private int RunProcessStreaming(string workingDir, string fileName, string arguments, string logPrefix)
