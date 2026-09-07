@@ -15,6 +15,14 @@ import argparse
 import subprocess
 from pathlib import Path
 
+# Safe UTF-8 encoding configuration for Windows terminals
+if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
 
 def get_superset_candidates() -> list[Path]:
     home = Path.home()
@@ -175,7 +183,7 @@ def patch_main_preset(preset_file: Path):
     )
 
     import_stmt = "import { StratumHeatmapPlugin } from '../../../plugins/superset-plugin-chart-stratum-heatmap/src';\n"
-    register_stmt = "        new StratumHeatmapPlugin().configure({ key: 'stratum_heatmap' }).register(),\n"
+    register_stmt = "        new StratumHeatmapPlugin().configure({ key: 'stratum_heatmap' }),\n"
 
     # Iniezione import
     lines = content.splitlines(keepends=True)
@@ -238,7 +246,14 @@ def print_docker_instructions(superset_root: Path, logger=None):
             print(f"\033[96m{line}\033[0m")
 
 
-def install_plugin(superset_root: Path, docker: bool = False, compose_file: str = "docker-compose-non-dev.yml", clean_cache: bool = True, logger=None):
+def install_plugin(
+    superset_root: Path,
+    plugin_root: Path | None = None,
+    docker: bool = False,
+    compose_file: str = "docker-compose-non-dev.yml",
+    clean_cache: bool = True,
+    logger=None
+):
     def _log(msg, level="info"):
         if logger:
             logger(msg, level)
@@ -252,10 +267,15 @@ def install_plugin(superset_root: Path, docker: bool = False, compose_file: str 
             log_info(msg)
 
     script_dir = Path(__file__).resolve().parent
-    plugin_root = script_dir.parent
+    if plugin_root is None:
+        plugin_root = script_dir.parent
+    else:
+        plugin_root = Path(plugin_root).resolve()
 
     if not superset_root.is_dir():
         raise FileNotFoundError(f"Cartella Superset non trovata: {superset_root}")
+    if not plugin_root.is_dir():
+        raise FileNotFoundError(f"Cartella Plugin non trovata: {plugin_root}")
 
     _log(f"Cartella Target Superset: {superset_root}")
     _log(f"Cartella Plugin: {plugin_root}")
@@ -266,12 +286,14 @@ def install_plugin(superset_root: Path, docker: bool = False, compose_file: str 
     _log(f"Frontend: {frontend_dir.name}")
     _log(f"MainPreset: {main_preset.name}")
 
-    # Build plugin locale se necessario prima di copiare
-    try:
-        _log("Esecuzione build preliminare del plugin (npm run build)...")
-        subprocess.run(["npm", "run", "build"], cwd=plugin_root, shell=True, check=False)
-    except Exception as e:
-        _log(f"Avviso durante npm run build: {e}", "warn")
+    # Build plugin locale se presente package.json prima di copiare
+    pkg_file = plugin_root / "package.json"
+    if pkg_file.is_file():
+        try:
+            _log("Esecuzione build preliminare del plugin (npm run build)...")
+            subprocess.run(["npm", "run", "build"], cwd=plugin_root, shell=True, check=False)
+        except Exception as e:
+            _log(f"Avviso durante npm run build: {e}", "warn")
 
     copy_plugin_files(plugin_root, frontend_dir)
     patch_main_preset(main_preset)
@@ -292,13 +314,22 @@ def main():
     parser = argparse.ArgumentParser(
         description="Automated installer for StratumHeatmap Chart Plugin"
     )
-    default_path = auto_detect_superset_path()
+    default_superset = auto_detect_superset_path()
+    default_plugin = Path(__file__).resolve().parent.parent
+
     parser.add_argument(
         "--superset-path",
         "-s",
         type=str,
-        default=str(default_path) if default_path else None,
+        default=str(default_superset) if default_superset else None,
         help="Percorso della cartella radice di Apache Superset"
+    )
+    parser.add_argument(
+        "--plugin-path",
+        "-p",
+        type=str,
+        default=str(default_plugin),
+        help="Percorso della cartella del Plugin StratumHeatmap"
     )
     parser.add_argument(
         "--compose-file",
@@ -332,21 +363,57 @@ def main():
         help="Non pulire la cache di superset-frontend"
     )
 
+    parser.add_argument(
+        "--yes",
+        "-y",
+        action="store_true",
+        default=False,
+        help="Conferma automatica senza prompt interattivi"
+    )
+
     args = parser.parse_args()
 
-    if not args.superset_path:
-        print("\033[93m[ATTENZIONE]\033[0m Nessun percorso Superset specificato o auto-rilevato.")
-        path_input = input("Inserisci il percorso della cartella radice di Apache Superset: ").strip()
-        if not path_input:
-            print("\033[91m[ERRORE]\033[0m Percorso obbligatorio. Operazione annullata.")
-            sys.exit(1)
-        args.superset_path = path_input
+    print("\033[96m\033[1m====================================================================")
+    print("   [+] STRATUM HEATMAP - APACHE SUPERSET PLUGIN INSTALLER")
+    print("====================================================================\033[0m\n")
 
-    superset_root = Path(args.superset_path).resolve()
+    is_interactive = sys.stdin and sys.stdin.isatty() and not args.yes
+
+    # 1. Richiesta / conferma percorso Superset
+    superset_input = args.superset_path
+    if not superset_input and is_interactive:
+        print("\033[93m[1/2] Percorso Progetto Apache Superset:\033[0m")
+        superset_input = input("  Inserisci il percorso della cartella radice di Superset: ").strip()
+    elif is_interactive:
+        print(f"\033[94m[1/2] Percorso Progetto Apache Superset:\033[0m {superset_input}")
+        ans = input(f"  Premi INVIO per confermare o digita nuovo percorso: ").strip()
+        if ans:
+            superset_input = ans
+
+    if not superset_input:
+        log_error("Percorso Superset obbligatorio. Operazione annullata.")
+        sys.exit(1)
+
+    superset_root = Path(superset_input).resolve()
+
+    # 2. Richiesta / conferma percorso Plugin
+    plugin_input = args.plugin_path
+    if is_interactive:
+        print(f"\n\033[94m[2/2] Percorso Cartella Plugin StratumHeatmap:\033[0m {plugin_input}")
+        ans = input(f"  Premi INVIO per confermare o digita nuovo percorso: ").strip()
+        if ans:
+            plugin_input = ans
+
+    if not plugin_input:
+        log_error("Percorso Plugin obbligatorio. Operazione annullata.")
+        sys.exit(1)
+
+    plugin_root = Path(plugin_input).resolve()
 
     try:
         install_plugin(
-            superset_root,
+            superset_root=superset_root,
+            plugin_root=plugin_root,
             docker=args.docker,
             compose_file=args.compose_file,
             clean_cache=args.clean_cache

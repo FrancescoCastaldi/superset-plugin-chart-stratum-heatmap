@@ -15,6 +15,7 @@
 [CmdletBinding()]
 param (
     [string]$SupersetPath,
+    [string]$PluginPath,
     [switch]$NoDocker,
     [switch]$SkipCleanCache
 )
@@ -31,10 +32,10 @@ Write-Color "   Windows PowerShell Automation Script                         " "
 Write-Color "================================================================" "Cyan"
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$PluginRoot = Split-Path -Parent $ScriptDir
+$DefaultPluginRoot = Split-Path -Parent $ScriptDir
 $PythonInstaller = Join-Path $ScriptDir "installer.py"
 
-# Auto-rilevamento percorso se non fornito
+# 1. Superset Path
 if (-not $SupersetPath) {
     $Candidates = @(
         "D:\Sviluppo\superset",
@@ -59,7 +60,7 @@ if (-not $SupersetPath) {
 if (-not $SupersetPath) {
     Write-Host ""
     Write-Color "Inserisci il percorso della cartella radice di Apache Superset:" "Yellow"
-    $SupersetPath = Read-Host "Percorso (es. D:\Sviluppo\superset)"
+    $SupersetPath = Read-Host "Percorso Superset (es. D:\Sviluppo\superset)"
 }
 
 if (-not (Test-Path $SupersetPath)) {
@@ -68,8 +69,28 @@ if (-not (Test-Path $SupersetPath)) {
 }
 
 $ResolvedSupersetPath = (Resolve-Path $SupersetPath).Path
+
+# 2. Plugin Path
+if (-not $PluginPath) {
+    Write-Host ""
+    Write-Color "Cartella del Plugin StratumHeatmap [Default: $DefaultPluginRoot]:" "Yellow"
+    $InputPlugin = Read-Host "Percorso Plugin (premi INVIO per confermare default)"
+    if ($InputPlugin) {
+        $PluginPath = $InputPlugin
+    } else {
+        $PluginPath = $DefaultPluginRoot
+    }
+}
+
+if (-not (Test-Path $PluginPath)) {
+    Write-Color "[ERRORE] Il percorso del plugin '$PluginPath' non esiste!" "Red"
+    exit 1
+}
+
+$ResolvedPluginPath = (Resolve-Path $PluginPath).Path
+
 Write-Color "[INFO] Cartella Target Superset: $ResolvedSupersetPath" "Gray"
-Write-Color "[INFO] Cartella Plugin:          $PluginRoot" "Gray"
+Write-Color "[INFO] Cartella Plugin:          $ResolvedPluginPath" "Gray"
 
 # Verifica se Python e' disponibile
 $PythonCmd = Get-Command "python" -ErrorAction SilentlyContinue
@@ -79,7 +100,7 @@ if (-not $PythonCmd) {
 
 if ($PythonCmd) {
     Write-Color "[INFO] Esecuzione installer Python avanzato..." "Green"
-    $argsList = @($PythonInstaller, "--superset-path", $ResolvedSupersetPath)
+    $argsList = @($PythonInstaller, "--superset-path", $ResolvedSupersetPath, "--plugin-path", $ResolvedPluginPath)
     if ($NoDocker) {
         $argsList += "--no-docker"
     }
@@ -100,7 +121,7 @@ if ($PythonCmd) {
     # Build locale plugin se necessario
     Write-Color "[INFO] Compilazione TypeScript del plugin..." "Yellow"
     try {
-        Set-Location $PluginRoot
+        Set-Location $ResolvedPluginPath
         npm run build
     } catch {
         Write-Color "[WARN] Avviso durante npm run build: $_" "Yellow"
@@ -122,7 +143,7 @@ if ($PythonCmd) {
 
     $ItemsToCopy = @("src", "dist", "package.json", "tsconfig.json", "README.md")
     foreach ($item in $ItemsToCopy) {
-        $srcItem = Join-Path $PluginRoot $item
+        $srcItem = Join-Path $ResolvedPluginPath $item
         if (Test-Path $srcItem) {
             Copy-Item -Path $srcItem -Destination $DestDir -Recurse -Force
         }
@@ -141,7 +162,7 @@ if ($PythonCmd) {
         $Content = $Content -replace "[ \t]*new\s+StratumHeatmapPlugin\(\)\.configure\(\{[\s\S]*?\}\)\.register\(\),?\r?\n?", ""
 
         $ImportLine = "import { StratumHeatmapPlugin } from '../../../plugins/superset-plugin-chart-stratum-heatmap/src';`n"
-        $RegisterLine = "        new StratumHeatmapPlugin().configure({ key: 'stratum_heatmap' }).register(),`n"
+        $RegisterLine = "        new StratumHeatmapPlugin().configure({ key: 'stratum_heatmap' }),`n"
         
         $Content = $ImportLine + $Content
         $Content = $Content -replace "(plugins\s*:\s*\[)", "`$1`n$RegisterLine"

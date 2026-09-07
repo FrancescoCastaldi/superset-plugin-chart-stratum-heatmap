@@ -1,5 +1,5 @@
-import React, { useRef, useMemo } from 'react';
-import ReactECharts from 'echarts-for-react';
+import React, { useRef, useMemo, useEffect } from 'react';
+import * as echarts from 'echarts';
 import { StratumHeatmapTransformedProps, HeatmapCellData, HeatmapDatum } from '../types';
 import { formatPercentage, formatMetricValue } from '../utils/formatting';
 
@@ -27,7 +27,8 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
     onCellClick,
   } = props;
 
-  const echartsRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const chartInstanceRef = useRef<echarts.EChartsType | null>(null);
 
   // Calcola le opzioni ECharts per il rendering
   const option = useMemo(() => {
@@ -240,44 +241,70 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
     activeCell,
   ]);
 
-  // Gestione evento click su cella per Cross-Filtering
-  const onEvents = useMemo(() => {
-    return {
-      click: (params: any) => {
-        if (!onCellClick || !params.data) return;
-        const coords = params.data.value || params.data;
-        const meta: HeatmapCellData = coords?.[3];
-        if (!meta) return;
+  // Inizializzazione istanza ECharts e gestione resize
+  useEffect(() => {
+    if (!containerRef.current) return;
+    if (!chartInstanceRef.current) {
+      chartInstanceRef.current = echarts.init(containerRef.current, undefined, {
+        renderer: 'canvas',
+      });
+    }
+    chartInstanceRef.current.resize({ width, height });
+  }, [width, height]);
 
-        // Se la cella cliccata è già attiva, resetta il filtro (toggle)
-        if (
-          activeCell &&
-          String(activeCell.x) === String(meta.xValue) &&
-          String(activeCell.y) === String(meta.yValue)
-        ) {
-          onCellClick([]);
-          return;
-        }
+  // Aggiornamento opzioni ed eventi click per cross-filtering
+  useEffect(() => {
+    const chart = chartInstanceRef.current;
+    if (!chart) return;
 
-        // Altrimenti emette cross-filter congiunto su X e Y
-        onCellClick([
-          {
-            col: xAxisDimension,
-            op: 'IN',
-            val: [meta.xValue],
-          },
-          {
-            col: yAxisDimension,
-            op: 'IN',
-            val: [meta.yValue],
-          },
-        ]);
-      },
+    chart.setOption(option, true);
+
+    const handleClick = (params: any) => {
+      if (!onCellClick || !params.data) return;
+      const coords = params.data.value || params.data;
+      const meta: HeatmapCellData = coords?.[3];
+      if (!meta) return;
+
+      // Se la cella cliccata è già attiva, resetta il filtro (toggle)
+      if (
+        activeCell &&
+        String(activeCell.x) === String(meta.xValue) &&
+        String(activeCell.y) === String(meta.yValue)
+      ) {
+        onCellClick([]);
+        return;
+      }
+
+      // Altrimenti emette cross-filter congiunto su X e Y
+      onCellClick([
+        {
+          col: xAxisDimension,
+          op: 'IN',
+          val: [meta.xValue],
+        },
+        {
+          col: yAxisDimension,
+          op: 'IN',
+          val: [meta.yValue],
+        },
+      ]);
     };
-  }, [onCellClick, xAxisDimension, yAxisDimension, activeCell]);
+
+    chart.off('click');
+    chart.on('click', handleClick);
+  }, [option, onCellClick, xAxisDimension, yAxisDimension, activeCell]);
+
+  // Cleanup alla distruzione del componente
+  useEffect(() => {
+    return () => {
+      chartInstanceRef.current?.dispose();
+      chartInstanceRef.current = null;
+    };
+  }, []);
 
   return (
     <div
+      ref={containerRef}
       style={{
         width: `${width}px`,
         height: `${height}px`,
@@ -285,14 +312,6 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
         background: '#ffffff',
         overflow: 'hidden',
       }}
-    >
-      <ReactECharts
-        ref={echartsRef}
-        option={option}
-        onEvents={onEvents}
-        style={{ width: '100%', height: '100%' }}
-        opts={{ renderer: 'canvas' }}
-      />
-    </div>
+    />
   );
 }

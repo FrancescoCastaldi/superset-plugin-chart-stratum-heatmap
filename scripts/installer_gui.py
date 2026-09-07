@@ -82,12 +82,12 @@ class StratumHeatmapInstallerGUI(tk.Tk):
         body_frame = tk.Frame(self, bg="#f8fafc", padx=20, pady=16)
         body_frame.pack(fill="both", expand=True)
 
-        # Path Selection
-        lbl_path = ttk.Label(body_frame, text="Cartella Radice di Apache Superset:", font=("Segoe UI", 10, "bold"))
+        # 1. Superset Path Selection
+        lbl_path = ttk.Label(body_frame, text="1. Cartella Radice di Apache Superset:", font=("Segoe UI", 10, "bold"))
         lbl_path.pack(anchor="w", pady=(0, 4))
 
         path_input_frame = tk.Frame(body_frame, bg="#f8fafc")
-        path_input_frame.pack(fill="x", pady=(0, 12))
+        path_input_frame.pack(fill="x", pady=(0, 10))
 
         self.path_var = tk.StringVar()
         self.entry_path = ttk.Entry(path_input_frame, textvariable=self.path_var, font=("Segoe UI", 10))
@@ -95,6 +95,20 @@ class StratumHeatmapInstallerGUI(tk.Tk):
 
         btn_browse = ttk.Button(path_input_frame, text="Sfoglia...", command=self.browse_path)
         btn_browse.pack(side="right")
+
+        # 2. Plugin Path Selection
+        lbl_plugin = ttk.Label(body_frame, text="2. Cartella del Plugin StratumHeatmap:", font=("Segoe UI", 10, "bold"))
+        lbl_plugin.pack(anchor="w", pady=(0, 4))
+
+        plugin_input_frame = tk.Frame(body_frame, bg="#f8fafc")
+        plugin_input_frame.pack(fill="x", pady=(0, 12))
+
+        self.plugin_path_var = tk.StringVar(value=str(self.plugin_root))
+        self.entry_plugin = ttk.Entry(plugin_input_frame, textvariable=self.plugin_path_var, font=("Segoe UI", 10))
+        self.entry_plugin.pack(side="left", fill="x", expand=True, padx=(0, 8))
+
+        btn_browse_plugin = ttk.Button(plugin_input_frame, text="Sfoglia...", command=self.browse_plugin_path)
+        btn_browse_plugin.pack(side="right")
 
         # Checkboxes / Opzioni
         options_frame = tk.Frame(body_frame, bg="#f8fafc")
@@ -163,7 +177,16 @@ class StratumHeatmapInstallerGUI(tk.Tk):
         )
         if folder:
             self.path_var.set(folder)
-            self.log(f"Cartella selezionata: {folder}", "info")
+            self.log(f"Cartella Superset selezionata: {folder}", "info")
+
+    def browse_plugin_path(self):
+        folder = filedialog.askdirectory(
+            title="Seleziona la cartella del Plugin StratumHeatmap",
+            initialdir=self.plugin_path_var.get() or str(self.plugin_root)
+        )
+        if folder:
+            self.plugin_path_var.set(folder)
+            self.log(f"Cartella Plugin selezionata: {folder}", "info")
 
     def log(self, message: str, level: str = "info"):
         self.txt_log.insert("end", f"[{level.upper()}] {message}\n", level)
@@ -171,22 +194,36 @@ class StratumHeatmapInstallerGUI(tk.Tk):
 
     def start_installation(self):
         superset_path_str = self.path_var.get().strip()
+        plugin_path_str = self.plugin_path_var.get().strip()
+
         if not superset_path_str:
-            messagebox.showwarning("Attenzione", "Inserisci il percorso di Apache Superset.")
+            messagebox.showwarning("Attenzione", "Inserisci il percorso della cartella di Apache Superset.")
+            return
+
+        if not plugin_path_str:
+            messagebox.showwarning("Attenzione", "Inserisci il percorso della cartella del Plugin StratumHeatmap.")
             return
 
         superset_root = Path(superset_path_str).resolve()
         if not superset_root.is_dir():
-            messagebox.showerror("Errore", f"La cartella specificata non esiste:\n{superset_root}")
+            messagebox.showerror("Errore", f"La cartella di Superset specificata non esiste:\n{superset_root}")
+            return
+
+        plugin_root = Path(plugin_path_str).resolve()
+        if not plugin_root.is_dir():
+            messagebox.showerror("Errore", f"La cartella del Plugin specificata non esiste:\n{plugin_root}")
             return
 
         self.btn_install.config(state="disabled")
         self.log("--- INIZIO INSTALLAZIONE ---", "info")
+        self.log(f"Target Superset: {superset_root}", "info")
+        self.log(f"Source Plugin:   {plugin_root}", "info")
 
         def _worker():
             try:
                 install_plugin(
                     superset_root=superset_root,
+                    plugin_root=plugin_root,
                     docker=self.docker_var.get(),
                     clean_cache=self.clean_cache_var.get(),
                     logger=lambda msg, lvl: self.after(0, self.log, msg, lvl)
