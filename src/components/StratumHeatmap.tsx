@@ -14,9 +14,14 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
     maxValue,
     visualMapMode,
     piecewiseBuckets = 5,
+    showLegend = true,
+    legendPosition = 'bottom',
     xAxisLabelRotation = 0,
     colorRange,
     showValues,
+    valueFontSize = 11,
+    showZeroValues = false,
+    zeroCellNeutral = true,
     showPercentages,
     cellRadius,
     cellBorderWidth,
@@ -32,14 +37,17 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
 
   // Calcola le opzioni ECharts per il rendering
   const option = useMemo(() => {
-    // Configurazione visualMap (Continua vs Piecewise)
+    // Configurazione visualMap (Continua vs Piecewise) con fix dimension = 2
     const visualMapConfig: any = {
+      show: showLegend,
+      dimension: 2, // FONDAMENTALE: mappa l'indice 2 (valore) e non l'indice 3 (oggetto meta)
       min: minValue,
       max: maxValue,
       calculable: visualMapMode === 'continuous',
-      orient: 'horizontal',
-      left: 'center',
-      bottom: 8,
+      orient: legendPosition === 'right' ? 'vertical' : 'horizontal',
+      left: legendPosition === 'right' ? 'right' : 'center',
+      bottom: legendPosition === 'bottom' ? 8 : undefined,
+      top: legendPosition === 'top' ? 8 : (legendPosition === 'right' ? 'center' : undefined),
       inRange: {
         color: colorRange,
       },
@@ -60,12 +68,14 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
     const seriesData = matrixData.map(item => {
       let coords: [number, number, number | null, HeatmapCellData];
       let labelColor: string | undefined;
+      let cellColor: string | undefined;
 
       if (Array.isArray(item)) {
         coords = item;
       } else {
         coords = item.value;
         labelColor = item.label?.color;
+        cellColor = item.itemStyle?.color;
       }
 
       const meta = coords[3];
@@ -79,7 +89,17 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
 
       const datum: any = {
         value: coords,
+        itemStyle: {
+          borderRadius: cellRadius,
+          borderColor: cellBorderColor,
+          borderWidth: cellBorderWidth,
+        },
       };
+
+      // Doppio meccanismo di sicurezza: colorazione esplicita per cella se presente
+      if (cellColor) {
+        datum.itemStyle.color = cellColor;
+      }
 
       if (labelColor) {
         datum.label = {
@@ -89,6 +109,7 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
 
       if (isSelected) {
         datum.itemStyle = {
+          ...datum.itemStyle,
           borderColor: '#0284c7',
           borderWidth: Math.max(cellBorderWidth + 2, 3),
           shadowBlur: 8,
@@ -98,6 +119,10 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
 
       return datum;
     });
+
+    const gridBottom = !showLegend ? 28 : (legendPosition === 'bottom' ? 65 : 28);
+    const gridTop = showLegend && legendPosition === 'top' ? 55 : 24;
+    const gridRight = showLegend && legendPosition === 'right' ? 80 : 28;
 
     return {
       tooltip: {
@@ -148,9 +173,9 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
         },
       },
       grid: {
-        top: 24,
-        right: 28,
-        bottom: 65,
+        top: gridTop,
+        right: gridRight,
+        bottom: gridBottom,
         left: 60,
         containLabel: true,
       },
@@ -201,10 +226,11 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
             show: showValues,
             formatter: (p: any) => {
               const val = p.data?.value ? p.data.value[2] : p.data?.[2];
-              if (val === 0 || val === null || val === undefined) return '';
+              if (val === null || val === undefined) return '';
+              if (val === 0) return showZeroValues ? '0' : '';
               return formatMetricValue(val, 'SMART_NUMBER');
             },
-            fontSize: 11,
+            fontSize: valueFontSize || 11,
             fontWeight: 600,
           },
           itemStyle: {
@@ -231,9 +257,14 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
     maxValue,
     visualMapMode,
     piecewiseBuckets,
+    showLegend,
+    legendPosition,
     xAxisLabelRotation,
     colorRange,
     showValues,
+    valueFontSize,
+    showZeroValues,
+    zeroCellNeutral,
     showPercentages,
     cellRadius,
     cellBorderWidth,

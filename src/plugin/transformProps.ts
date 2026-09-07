@@ -28,10 +28,18 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     metric,
     visualMapMode = 'continuous' as VisualMapMode,
     piecewiseBuckets = 5,
+    showLegend = true,
+    legendPosition = 'bottom',
     xAxisLabelRotation = 0,
     linearColorScheme,
     colorScheme,
+    reversePalette = false,
+    customMinValue,
+    customMaxValue,
     showValues = true,
+    valueFontSize = 11,
+    showZeroValues = false,
+    zeroCellNeutral = true,
     showPercentages = true,
     autoContrastText = true,
     cellRadius = 4,
@@ -67,7 +75,10 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
 
   // 3. Risoluzione palette colori predefinita o dinamica
   const chosenScheme = linearColorScheme || colorScheme || 'wavesOfBlue';
-  const colorRange = COLOR_SCHEMES[chosenScheme] || COLOR_SCHEMES.wavesOfBlue;
+  let colorRange = (COLOR_SCHEMES[chosenScheme] || COLOR_SCHEMES.wavesOfBlue).slice();
+  if (reversePalette) {
+    colorRange = colorRange.reverse();
+  }
 
   // 4. Costruzione griglia per calcolo totali
   const gridMap = new Map<string, number>();
@@ -96,6 +107,14 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
 
   if (minValue === Infinity) minValue = 0;
   if (maxValue === -Infinity) maxValue = 1;
+
+  // Override manuale min/max se specificato
+  if (customMinValue !== undefined && customMinValue !== null && !isNaN(Number(customMinValue))) {
+    minValue = Number(customMinValue);
+  }
+  if (customMaxValue !== undefined && customMaxValue !== null && !isNaN(Number(customMaxValue))) {
+    maxValue = Number(customMaxValue);
+  }
 
   // 5. Risoluzione activeCell da filterState Superset
   let activeCell: { x: string; y: string } | null = null;
@@ -143,13 +162,21 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
       };
 
       const normalized = Math.max(0, Math.min(1, (val - minValue) / valRange));
-      const cellBg = interpolateColor(colorRange, normalized);
+      const cellBg =
+        val === 0 && zeroCellNeutral
+          ? '#f1f5f9'
+          : interpolateColor(colorRange, normalized);
       const optimalTextColor = getOptimalTextColor(cellBg);
 
       matrixData.push({
         value: [xIdx, yIdx, val, cellMeta],
+        itemStyle: {
+          color: cellBg,
+        },
         label: {
           color: autoContrastText ? optimalTextColor : '#1c3d5e',
+          fontSize: valueFontSize,
+          show: showValues && (val > 0 || showZeroValues),
         },
       });
     });
@@ -219,9 +246,14 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     maxValue,
     visualMapMode,
     piecewiseBuckets,
+    showLegend,
+    legendPosition,
     xAxisLabelRotation,
     colorRange,
     showValues,
+    valueFontSize,
+    showZeroValues,
+    zeroCellNeutral,
     showPercentages,
     cellRadius,
     cellBorderWidth,
@@ -235,3 +267,4 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     filterState: filterState as any,
   };
 }
+

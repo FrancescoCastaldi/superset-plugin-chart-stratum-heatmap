@@ -13,10 +13,18 @@ export interface StratumHeatmapFormData extends QueryFormData {
   metric: any;
   colorScheme?: string;
   linearColorScheme?: string;
+  reversePalette?: boolean;
+  customMinValue?: number | null;
+  customMaxValue?: number | null;
   visualMapMode?: VisualMapMode;
   piecewiseBuckets?: number;
+  showLegend?: boolean;
+  legendPosition?: 'bottom' | 'top' | 'right';
   xAxisLabelRotation?: number;
   showValues?: boolean;
+  valueFontSize?: number;
+  showZeroValues?: boolean;
+  zeroCellNeutral?: boolean;
   showPercentages?: boolean;
   autoContrastText?: boolean;
   cellRadius?: number;
@@ -58,10 +66,14 @@ export interface HeatmapDatum {
   value: [number, number, number | null, HeatmapCellData];
   label?: {
     color?: string;
+    fontSize?: number;
+    show?: boolean;
   };
   itemStyle?: {
+    color?: string;
     borderColor?: string;
     borderWidth?: number;
+    borderRadius?: number;
     shadowBlur?: number;
     shadowColor?: string;
   };
@@ -77,9 +89,14 @@ export interface StratumHeatmapTransformedProps {
   maxValue: number;
   visualMapMode: VisualMapMode;
   piecewiseBuckets?: number;
+  showLegend?: boolean;
+  legendPosition?: 'bottom' | 'top' | 'right';
   xAxisLabelRotation?: number;
   colorRange: string[];
   showValues: boolean;
+  valueFontSize: number;
+  showZeroValues: boolean;
+  zeroCellNeutral: boolean;
   showPercentages: boolean;
   cellRadius: number;
   cellBorderWidth: number;
@@ -96,3 +113,4 @@ export interface StratumHeatmapTransformedProps {
     [key: string]: any;
   };
 }
+

@@ -15,7 +15,7 @@
     "src"
   ],
   "scripts": {
-    "build": "tsc --build",
+    "build": "node ./node_modules/typescript/lib/tsc.js --build",
     "clean": "rimraf dist",
     "test": "vitest run",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
