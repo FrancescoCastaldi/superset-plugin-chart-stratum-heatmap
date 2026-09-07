@@ -25,7 +25,7 @@ const metadata = new ChartMetadata({
     t('Healthcare'),
   ],
   credits: ['Francesco Castaldi'],
-  exampleGallery: [{ url: example, urlDark: example }],
+  exampleGallery: [{ url: example }],
   thumbnail,
 });
 

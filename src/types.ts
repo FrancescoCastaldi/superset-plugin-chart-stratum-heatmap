@@ -15,6 +15,7 @@ export interface StratumHeatmapFormData extends QueryFormData {
   linearColorScheme?: string;
   visualMapMode?: VisualMapMode;
   piecewiseBuckets?: number;
+  xAxisLabelRotation?: number;
   showValues?: boolean;
   showPercentages?: boolean;
   autoContrastText?: boolean;
@@ -53,15 +54,30 @@ export interface StratumHeatmapChartProps extends ChartProps {
   }[];
 }
 
+export interface HeatmapDatum {
+  value: [number, number, number | null, HeatmapCellData];
+  label?: {
+    color?: string;
+  };
+  itemStyle?: {
+    borderColor?: string;
+    borderWidth?: number;
+    shadowBlur?: number;
+    shadowColor?: string;
+  };
+}
+
 export interface StratumHeatmapTransformedProps {
   width: number;
   height: number;
   xCategories: string[];
   yCategories: string[];
-  matrixData: [number, number, number | null, HeatmapCellData][];
+  matrixData: (HeatmapDatum | [number, number, number | null, HeatmapCellData])[];
   minValue: number;
   maxValue: number;
   visualMapMode: VisualMapMode;
+  piecewiseBuckets?: number;
+  xAxisLabelRotation?: number;
   colorRange: string[];
   showValues: boolean;
   showPercentages: boolean;
@@ -72,9 +88,11 @@ export interface StratumHeatmapTransformedProps {
   emitFilter: boolean;
   xAxisDimension: string;
   yAxisDimension: string;
+  activeCell?: { x: string; y: string } | null;
   onCellClick?: (filter: { col: string; op: 'IN'; val: string[] }[]) => void;
   filterState?: {
     x?: string;
     y?: string;
+    [key: string]: any;
   };
 }

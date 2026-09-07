@@ -63,6 +63,7 @@ export function getWeekdayRank(val: string): number | null {
 export function getHourRank(val: string): number | null {
   if (val === null || val === undefined) return null;
   const clean = String(val).trim();
+  if (clean === '') return null;
 
   // Formato HH:MM o HH:MM:SS
   const timeMatch = clean.match(/^(\d{1,2}):\d{2}/);
@@ -71,7 +72,10 @@ export function getHourRank(val: string): number | null {
     return h >= 0 && h <= 23 ? h : null;
   }
 
-  // Numero intero puro
+  // Numero intero puro (non stringa vuota)
+  if (!/^\d+$/.test(clean)) {
+    return null;
+  }
   const num = Number(clean);
   if (!isNaN(num) && num >= 0 && num <= 23) {
     return num;

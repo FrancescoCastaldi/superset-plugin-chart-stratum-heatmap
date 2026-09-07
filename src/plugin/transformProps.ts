@@ -3,10 +3,19 @@ import {
   StratumHeatmapFormData,
   StratumHeatmapTransformedProps,
   HeatmapCellData,
+  HeatmapDatum,
   VisualMapMode,
 } from '../types';
 import { smartSortCategories } from '../utils/sorters';
 import { formatMetricValue } from '../utils/formatting';
+import { getOptimalTextColor, interpolateColor } from '../utils/contrast';
+
+const COLOR_SCHEMES: Record<string, string[]> = {
+  wavesOfBlue: ['#eef4f9', '#bcd5ea', '#7aa8cf', '#3a6a9b', '#1c3d5e'],
+  supersetColors: ['#f0f4f8', '#90cdf4', '#3182ce', '#1a365d'],
+  emeraldHeat: ['#f0fff4', '#9ae6b4', '#38a169', '#1c4532'],
+  sunsetWarm: ['#fffaf0', '#fbd38d', '#ed8936', '#9c4221'],
+};
 
 export default function transformProps(chartProps: ChartProps): StratumHeatmapTransformedProps {
   const { width, height, formData, queriesData, hooks, filterState } = chartProps;
@@ -18,6 +27,8 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     yAxisDimension = 'ORA_CONTATTO',
     metric,
     visualMapMode = 'continuous' as VisualMapMode,
+    piecewiseBuckets = 5,
+    xAxisLabelRotation = 0,
     linearColorScheme,
     colorScheme,
     showValues = true,
@@ -54,10 +65,11 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     ? smartSortCategories(rawYCategories, yAxisSortAsc)
     : rawYCategories;
 
-  const xMap = new Map<string, number>(xCategories.map((c, i) => [c, i]));
-  const yMap = new Map<string, number>(yCategories.map((c, i) => [c, i]));
+  // 3. Risoluzione palette colori predefinita o dinamica
+  const chosenScheme = linearColorScheme || colorScheme || 'wavesOfBlue';
+  const colorRange = COLOR_SCHEMES[chosenScheme] || COLOR_SCHEMES.wavesOfBlue;
 
-  // 3. Costruzione griglia per calcolo totali
+  // 4. Costruzione griglia per calcolo totali
   const gridMap = new Map<string, number>();
   const rowTotals = new Map<string, number>();
   const colTotals = new Map<string, number>();
@@ -85,8 +97,28 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
   if (minValue === Infinity) minValue = 0;
   if (maxValue === -Infinity) maxValue = 1;
 
-  // 4. Mappatura finale per ECharts Matrix
-  const matrixData: [number, number, number | null, HeatmapCellData][] = [];
+  // 5. Risoluzione activeCell da filterState Superset
+  let activeCell: { x: string; y: string } | null = null;
+  const fs: any = filterState;
+  if (fs) {
+    if (fs.activeCell && fs.activeCell.x && fs.activeCell.y) {
+      activeCell = fs.activeCell;
+    } else if (fs.x && fs.y) {
+      activeCell = { x: String(fs.x), y: String(fs.y) };
+    } else if (Array.isArray(fs.filters) && fs.filters.length >= 2) {
+      const xFilter = fs.filters.find((f: any) => f.col === xAxisDimension);
+      const yFilter = fs.filters.find((f: any) => f.col === yAxisDimension);
+      if (xFilter?.val?.[0] && yFilter?.val?.[0]) {
+        activeCell = { x: String(xFilter.val[0]), y: String(yFilter.val[0]) };
+      }
+    } else if (Array.isArray(fs.value) && fs.value.length >= 2) {
+      activeCell = { x: String(fs.value[0]), y: String(fs.value[1]) };
+    }
+  }
+
+  // 6. Mappatura finale per ECharts Matrix con contrasto WCAG per-datum
+  const valRange = maxValue - minValue || 1;
+  const matrixData: HeatmapDatum[] = [];
 
   xCategories.forEach((xVal, xIdx) => {
     yCategories.forEach((yVal, yIdx) => {
@@ -110,26 +142,71 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
         totalPercentage: grandTotal > 0 ? (val / grandTotal) * 100 : 0,
       };
 
-      matrixData.push([xIdx, yIdx, val, cellMeta]);
+      const normalized = Math.max(0, Math.min(1, (val - minValue) / valRange));
+      const cellBg = interpolateColor(colorRange, normalized);
+      const optimalTextColor = getOptimalTextColor(cellBg);
+
+      matrixData.push({
+        value: [xIdx, yIdx, val, cellMeta],
+        label: {
+          color: autoContrastText ? optimalTextColor : '#1c3d5e',
+        },
+      });
     });
   });
 
-  // 5. Palette colori predefinita (Waves of Blue)
-  const defaultColors = ['#eef4f9', '#bcd5ea', '#7aa8cf', '#3a6a9b', '#1c3d5e'];
-  const colorRange = defaultColors;
-
-  // Handler per Cross-Filtering verso Superset Dashboard
+  // 7. Handler per Cross-Filtering verso Superset Dashboard con supporto toggle deselezione
   const onCellClick = (filters: { col: string; op: 'IN'; val: string[] }[]) => {
-    if (emitFilter && hooks?.setDataMask) {
+    if (!emitFilter || !hooks?.setDataMask) return;
+
+    if (!filters || filters.length === 0) {
       hooks.setDataMask({
         extraFormData: {
-          filters,
+          filters: [],
         },
         filterState: {
-          value: filters.map(f => f.val[0]),
+          value: null,
+          activeCell: null,
+          filters: [],
         },
       });
+      return;
     }
+
+    const clickedX = filters.find(f => f.col === xAxisDimension)?.val[0];
+    const clickedY = filters.find(f => f.col === yAxisDimension)?.val[0];
+
+    // Se la cella cliccata è già attiva, deseleziona (toggle off)
+    if (
+      activeCell &&
+      clickedX !== undefined &&
+      clickedY !== undefined &&
+      String(activeCell.x) === String(clickedX) &&
+      String(activeCell.y) === String(clickedY)
+    ) {
+      hooks.setDataMask({
+        extraFormData: {
+          filters: [],
+        },
+        filterState: {
+          value: null,
+          activeCell: null,
+          filters: [],
+        },
+      });
+      return;
+    }
+
+    hooks.setDataMask({
+      extraFormData: {
+        filters,
+      },
+      filterState: {
+        value: filters.map(f => f.val[0]),
+        activeCell: clickedX !== undefined && clickedY !== undefined ? { x: clickedX, y: clickedY } : null,
+        filters,
+      },
+    });
   };
 
   return {
@@ -141,6 +218,8 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     minValue,
     maxValue,
     visualMapMode,
+    piecewiseBuckets,
+    xAxisLabelRotation,
     colorRange,
     showValues,
     showPercentages,
@@ -151,6 +230,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     emitFilter,
     xAxisDimension,
     yAxisDimension,
+    activeCell,
     onCellClick,
     filterState: filterState as any,
   };

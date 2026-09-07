@@ -70,6 +70,21 @@ const config: ControlPanelConfig = {
               ),
             },
           },
+          {
+            name: 'piecewiseBuckets',
+            config: {
+              type: 'SliderControl',
+              label: t('Piecewise Buckets'),
+              renderTrigger: true,
+              min: 2,
+              max: 10,
+              step: 1,
+              default: 5,
+              visibility: ({ controls }: { controls: Record<string, any> }) =>
+                Boolean(controls?.visualMapMode?.value === 'piecewise'),
+              description: t('Number of discrete color interval classes when using piecewise mode'),
+            },
+          },
         ],
         [
           {
@@ -146,6 +161,46 @@ const config: ControlPanelConfig = {
               renderTrigger: true,
               default: true,
               description: t('Automatically order Italian/English weekdays (Lunedì-Domenica) and hours (00:00-23:00).'),
+            },
+          },
+        ],
+        [
+          {
+            name: 'xAxisSortAsc',
+            config: {
+              type: 'CheckboxControl',
+              label: t('Sort X-Axis Ascending'),
+              renderTrigger: true,
+              default: true,
+              description: t('Whether to sort X-axis categories in ascending order.'),
+            },
+          },
+          {
+            name: 'yAxisSortAsc',
+            config: {
+              type: 'CheckboxControl',
+              label: t('Sort Y-Axis Ascending'),
+              renderTrigger: true,
+              default: true,
+              description: t('Whether to sort Y-axis categories in ascending order.'),
+            },
+          },
+        ],
+        [
+          {
+            name: 'xAxisLabelRotation',
+            config: {
+              type: 'SelectControl',
+              label: t('X-Axis Label Rotation'),
+              default: 0,
+              renderTrigger: true,
+              choices: [
+                [0, t('0° (Horizontal)')],
+                [30, t('30°')],
+                [45, t('45° (Slanted)')],
+                [90, t('90° (Vertical)')],
+              ],
+              description: t('Rotate X-axis tick labels to prevent overlap.'),
             },
           },
         ],

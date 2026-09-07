@@ -17,6 +17,7 @@
   "scripts": {
     "build": "tsc --build",
     "clean": "rimraf dist",
+    "test": "vitest run",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md,css,yml,yaml}\""
   },
@@ -38,6 +39,7 @@
     "access": "public"
   },
   "peerDependencies": {
+    "@superset-ui/chart-controls": "*",
     "@superset-ui/core": "*",
     "echarts": ">=5.4.0",
     "react": "^18.2.0",
@@ -50,6 +52,7 @@
     "lodash": "^4.17.21"
   },
   "devDependencies": {
+    "@superset-ui/chart-controls": "^0.20.3",
     "@superset-ui/core": "^0.20.4",
     "@types/d3-format": "^3.0.4",
     "@types/lodash": "^4.14.202",
@@ -58,6 +61,7 @@
     "echarts": "^5.4.3",
     "prettier": "^3.2.5",
     "rimraf": "^5.0.5",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.0"
   }
 }

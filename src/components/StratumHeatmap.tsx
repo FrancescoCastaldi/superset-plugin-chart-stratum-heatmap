@@ -1,8 +1,7 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
-import { StratumHeatmapTransformedProps, HeatmapCellData } from '../types';
-import { getOptimalTextColor, interpolateColor } from '../utils/contrast';
-import { formatPercentage } from '../utils/formatting';
+import { StratumHeatmapTransformedProps, HeatmapCellData, HeatmapDatum } from '../types';
+import { formatPercentage, formatMetricValue } from '../utils/formatting';
 
 export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
   const {
@@ -14,15 +13,17 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
     minValue,
     maxValue,
     visualMapMode,
+    piecewiseBuckets = 5,
+    xAxisLabelRotation = 0,
     colorRange,
     showValues,
     showPercentages,
     cellRadius,
     cellBorderWidth,
     cellBorderColor,
-    autoContrastText,
     xAxisDimension,
     yAxisDimension,
+    activeCell,
     onCellClick,
   } = props;
 
@@ -30,9 +31,6 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
 
   // Calcola le opzioni ECharts per il rendering
   const option = useMemo(() => {
-    // Normalizzatore per calcolare contrasto colore etichetta
-    const valRange = maxValue - minValue || 1;
-
     // Configurazione visualMap (Continua vs Piecewise)
     const visualMapConfig: any = {
       min: minValue,
@@ -52,10 +50,53 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
 
     if (visualMapMode === 'piecewise') {
       visualMapConfig.type = 'piecewise';
-      visualMapConfig.splitNumber = 5;
+      visualMapConfig.splitNumber = piecewiseBuckets;
     } else {
       visualMapConfig.type = 'continuous';
     }
+
+    // Normalizzazione dati serie ECharts con evidenziazione cella attiva
+    const seriesData = matrixData.map(item => {
+      let coords: [number, number, number | null, HeatmapCellData];
+      let labelColor: string | undefined;
+
+      if (Array.isArray(item)) {
+        coords = item;
+      } else {
+        coords = item.value;
+        labelColor = item.label?.color;
+      }
+
+      const meta = coords[3];
+      const isSelected =
+        Boolean(activeCell) &&
+        activeCell?.x !== undefined &&
+        activeCell?.y !== undefined &&
+        meta &&
+        String(activeCell.x) === String(meta.xValue) &&
+        String(activeCell.y) === String(meta.yValue);
+
+      const datum: any = {
+        value: coords,
+      };
+
+      if (labelColor) {
+        datum.label = {
+          color: labelColor,
+        };
+      }
+
+      if (isSelected) {
+        datum.itemStyle = {
+          borderColor: '#0284c7',
+          borderWidth: Math.max(cellBorderWidth + 2, 3),
+          shadowBlur: 8,
+          shadowColor: 'rgba(2, 132, 199, 0.6)',
+        };
+      }
+
+      return datum;
+    });
 
     return {
       tooltip: {
@@ -69,7 +110,7 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
           fontSize: 12,
         },
         formatter: (params: any) => {
-          const item = params.data;
+          const item = params.data?.value || params.data;
           if (!item) return '';
           const meta: HeatmapCellData = item[3];
           if (!meta) return '';
@@ -87,11 +128,11 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
                 showPercentages
                   ? `
                 <div style="display: flex; justify-content: space-between; gap: 16px; font-size: 11px; color: #cbd5e1; margin-top: 4px; padding-top: 4px; border-top: 1px dashed rgba(255,255,255,0.15);">
-                  <span>% su fascia (${meta.yValue}):</span>
+                  <span>% su riga (${meta.yValue}):</span>
                   <span><b>${formatPercentage(meta.rowPercentage)}</b></span>
                 </div>
                 <div style="display: flex; justify-content: space-between; gap: 16px; font-size: 11px; color: #cbd5e1;">
-                  <span>% su giorno (${meta.xValue}):</span>
+                  <span>% su colonna (${meta.xValue}):</span>
                   <span><b>${formatPercentage(meta.colPercentage)}</b></span>
                 </div>
                 <div style="display: flex; justify-content: space-between; gap: 16px; font-size: 11px; color: #cbd5e1;">
@@ -128,11 +169,13 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
           fontSize: 11,
           fontWeight: 600,
           interval: 0,
+          rotate: xAxisLabelRotation,
         },
       },
       yAxis: {
         type: 'category',
         data: yCategories,
+        inverse: true,
         splitArea: {
           show: false,
         },
@@ -152,23 +195,16 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
         {
           name: 'StratumHeatmap',
           type: 'heatmap',
-          data: matrixData.map(d => [d[0], d[1], d[2], d[3]]),
+          data: seriesData,
           label: {
             show: showValues,
             formatter: (p: any) => {
-              const val = p.data[2];
-              if (val === 0 || val === null) return '';
-              return String(val);
+              const val = p.data?.value ? p.data.value[2] : p.data?.[2];
+              if (val === 0 || val === null || val === undefined) return '';
+              return formatMetricValue(val, 'SMART_NUMBER');
             },
             fontSize: 11,
             fontWeight: 600,
-            color: (p: any) => {
-              if (!autoContrastText) return '#1c3d5e';
-              const val = p.data[2] || 0;
-              const normalized = (val - minValue) / valRange;
-              const cellBg = interpolateColor(colorRange, normalized);
-              return getOptimalTextColor(cellBg);
-            },
           },
           itemStyle: {
             borderRadius: cellRadius,
@@ -180,7 +216,7 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
               shadowBlur: 10,
               shadowColor: 'rgba(0, 0, 0, 0.35)',
               borderColor: '#0284c7',
-              borderWidth: 2,
+              borderWidth: Math.max(cellBorderWidth + 1, 2),
             },
           },
         },
@@ -193,13 +229,15 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
     minValue,
     maxValue,
     visualMapMode,
+    piecewiseBuckets,
+    xAxisLabelRotation,
     colorRange,
     showValues,
     showPercentages,
     cellRadius,
     cellBorderWidth,
     cellBorderColor,
-    autoContrastText,
+    activeCell,
   ]);
 
   // Gestione evento click su cella per Cross-Filtering
@@ -207,10 +245,21 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
     return {
       click: (params: any) => {
         if (!onCellClick || !params.data) return;
-        const meta: HeatmapCellData = params.data[3];
+        const coords = params.data.value || params.data;
+        const meta: HeatmapCellData = coords?.[3];
         if (!meta) return;
 
-        // Emette cross-filter congiunto su X e Y
+        // Se la cella cliccata è già attiva, resetta il filtro (toggle)
+        if (
+          activeCell &&
+          String(activeCell.x) === String(meta.xValue) &&
+          String(activeCell.y) === String(meta.yValue)
+        ) {
+          onCellClick([]);
+          return;
+        }
+
+        // Altrimenti emette cross-filter congiunto su X e Y
         onCellClick([
           {
             col: xAxisDimension,
@@ -225,7 +274,7 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
         ]);
       },
     };
-  }, [onCellClick, xAxisDimension, yAxisDimension]);
+  }, [onCellClick, xAxisDimension, yAxisDimension, activeCell]);
 
   return (
     <div

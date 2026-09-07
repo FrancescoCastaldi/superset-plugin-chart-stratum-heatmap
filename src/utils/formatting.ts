@@ -11,7 +11,7 @@ export function formatMetricValue(value: number | null | undefined, formatString
         return d3Format('.2s')(value).replace('G', 'B');
       }
       if (Math.abs(value) >= 1_000) {
-        return d3Format('.1s')(value);
+        return d3Format('.2s')(value);
       }
       return Number.isInteger(value) ? d3Format(',d')(value) : d3Format(',.2f')(value);
     }

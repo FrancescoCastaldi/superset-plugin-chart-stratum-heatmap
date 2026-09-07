@@ -15,6 +15,7 @@ from PIL import Image, ImageTk
 from installer import (
     auto_detect_superset_path,
     install_plugin,
+    print_docker_instructions,
 )
 
 class StratumHeatmapInstallerGUI(tk.Tk):
@@ -22,8 +23,8 @@ class StratumHeatmapInstallerGUI(tk.Tk):
         super().__init__()
 
         self.title("StratumHeatmap — Apache Superset Plugin Installer")
-        self.geometry("640x620")
-        self.minsize(580, 560)
+        self.geometry("640x650")
+        self.minsize(580, 580)
         self.configure(bg="#f8fafc")
 
         # Icona o stile
@@ -97,7 +98,15 @@ class StratumHeatmapInstallerGUI(tk.Tk):
 
         # Checkboxes / Opzioni
         options_frame = tk.Frame(body_frame, bg="#f8fafc")
-        options_frame.pack(fill="x", pady=(0, 16))
+        options_frame.pack(fill="x", pady=(0, 14))
+
+        self.clean_cache_var = tk.BooleanVar(value=True)
+        chk_clean_cache = ttk.Checkbutton(
+            options_frame,
+            text="Pulisci cache Webpack (node_modules/.cache)",
+            variable=self.clean_cache_var
+        )
+        chk_clean_cache.pack(anchor="w", pady=(0, 4))
 
         self.docker_var = tk.BooleanVar(value=False)
         chk_docker = ttk.Checkbutton(
@@ -114,7 +123,7 @@ class StratumHeatmapInstallerGUI(tk.Tk):
             style="Primary.TButton",
             command=self.start_installation
         )
-        self.btn_install.pack(fill="x", pady=(0, 16))
+        self.btn_install.pack(fill="x", pady=(0, 14))
 
         # Log Console
         lbl_log = ttk.Label(body_frame, text="Log Operazioni:", font=("Segoe UI", 9, "bold"))
@@ -179,6 +188,7 @@ class StratumHeatmapInstallerGUI(tk.Tk):
                 install_plugin(
                     superset_root=superset_root,
                     docker=self.docker_var.get(),
+                    clean_cache=self.clean_cache_var.get(),
                     logger=lambda msg, lvl: self.after(0, self.log, msg, lvl)
                 )
                 self.after(0, lambda: messagebox.showinfo("Successo", "StratumHeatmap è stato installato e registrato con successo in Apache Superset!"))

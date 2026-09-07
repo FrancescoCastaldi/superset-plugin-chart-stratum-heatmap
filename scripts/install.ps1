@@ -8,12 +8,15 @@
     Percorso della cartella radice di Apache Superset (es. D:\Sviluppo\superset).
 .PARAMETER NoDocker
     Non esegue comandi Docker Compose.
+.PARAMETER SkipCleanCache
+    Non elimina la cartella node_modules/.cache nel frontend di Superset.
 #>
 
 [CmdletBinding()]
 param (
     [string]$SupersetPath,
-    [switch]$NoDocker
+    [switch]$NoDocker,
+    [switch]$SkipCleanCache
 )
 
 $ErrorActionPreference = "Stop"
@@ -30,15 +33,19 @@ Write-Color "================================================================" "
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $PluginRoot = Split-Path -Parent $ScriptDir
 $PythonInstaller = Join-Path $ScriptDir "installer.py"
-$PythonGui = Join-Path $ScriptDir "installer_gui.py"
 
 # Auto-rilevamento percorso se non fornito
 if (-not $SupersetPath) {
     $Candidates = @(
         "D:\Sviluppo\superset",
-        "C:\Users\fracas\Desktop\superset",
-        "C:\Users\fracas\OneDrive - mapsengineering.com\superset-6.1.0",
-        "..\superset"
+        "..\superset",
+        "..\apache-superset",
+        "..\superset-6.1.0",
+        "$env:USERPROFILE\Desktop\superset",
+        "$env:USERPROFILE\OneDrive - mapsengineering.com\superset-6.1.0",
+        "$env:USERPROFILE\superset",
+        "$env:USERPROFILE\Projects\superset",
+        "$env:USERPROFILE\dev\superset"
     )
     foreach ($c in $Candidates) {
         if (Test-Path (Join-Path $c "superset-frontend\package.json")) {
@@ -76,6 +83,9 @@ if ($PythonCmd) {
     if ($NoDocker) {
         $argsList += "--no-docker"
     }
+    if ($SkipCleanCache) {
+        $argsList += "--no-clean-cache"
+    }
 
     & $PythonCmd.Source $argsList
 } else {
@@ -85,6 +95,15 @@ if ($PythonCmd) {
     if (-not (Test-Path $FrontendDir)) {
         Write-Color "[ERRORE] Impossibile trovare la cartella 'superset-frontend' in $ResolvedSupersetPath" "Red"
         exit 1
+    }
+
+    # Build locale plugin se necessario
+    Write-Color "[INFO] Compilazione TypeScript del plugin..." "Yellow"
+    try {
+        Set-Location $PluginRoot
+        npm run build
+    } catch {
+        Write-Color "[WARN] Avviso durante npm run build: $_" "Yellow"
     }
 
     $PluginsDir = Join-Path $FrontendDir "plugins"
@@ -99,7 +118,15 @@ if ($PythonCmd) {
     }
 
     Write-Color "[INFO] Copia dei file del plugin in $DestDir..." "Green"
-    Copy-Item -Path $PluginRoot -Destination $DestDir -Recurse -Force -Exclude @("node_modules", "dist", ".git", "*.log", "scripts")
+    New-Item -ItemType Directory -Path $DestDir -Force | Out-Null
+
+    $ItemsToCopy = @("src", "dist", "package.json", "tsconfig.json", "README.md")
+    foreach ($item in $ItemsToCopy) {
+        $srcItem = Join-Path $PluginRoot $item
+        if (Test-Path $srcItem) {
+            Copy-Item -Path $srcItem -Destination $DestDir -Recurse -Force
+        }
+    }
 
     # Patch MainPreset
     $MainPreset = Join-Path $FrontendDir "src\visualizations\presets\MainPreset.ts"
@@ -109,20 +136,45 @@ if ($PythonCmd) {
 
     if (Test-Path $MainPreset) {
         $Content = Get-Content -Path $MainPreset -Raw
-        if ($Content -notmatch "StratumHeatmapPlugin") {
-            $ImportLine = "import { StratumHeatmapPlugin } from '../../../plugins/superset-plugin-chart-stratum-heatmap/src';`n"
-            $RegisterLine = "        new StratumHeatmapPlugin().configure({ key: 'stratum_heatmap' }).register(),`n"
-            
-            $Content = $ImportLine + $Content
-            $Content = $Content -replace "(plugins\s*:\s*\[)", "`$1`n$RegisterLine"
-            Set-Content -Path $MainPreset -Value $Content
-            Write-Color "[SUCCESS] StratumHeatmap registrato con successo in $MainPreset" "Green"
-        } else {
-            Write-Color "[INFO] StratumHeatmapPlugin già registrato in $MainPreset." "Yellow"
+        # Pulisci vecchi import/registrazioni
+        $Content = $Content -replace "import\s*\{\s*StratumHeatmapPlugin\s*\}\s*from\s*['`"][^'`"]*superset-plugin-chart-stratum-heatmap[^'`"]*['`"];?\r?\n?", ""
+        $Content = $Content -replace "[ \t]*new\s+StratumHeatmapPlugin\(\)\.configure\(\{[\s\S]*?\}\)\.register\(\),?\r?\n?", ""
+
+        $ImportLine = "import { StratumHeatmapPlugin } from '../../../plugins/superset-plugin-chart-stratum-heatmap/src';`n"
+        $RegisterLine = "        new StratumHeatmapPlugin().configure({ key: 'stratum_heatmap' }).register(),`n"
+        
+        $Content = $ImportLine + $Content
+        $Content = $Content -replace "(plugins\s*:\s*\[)", "`$1`n$RegisterLine"
+        Set-Content -Path $MainPreset -Value $Content
+        Write-Color "[SUCCESS] StratumHeatmap registrato con successo in $MainPreset" "Green"
+    }
+
+    # Pulizia cache Webpack/Babel
+    if (-not $SkipCleanCache) {
+        $CacheDir = Join-Path $FrontendDir "node_modules\.cache"
+        if (Test-Path $CacheDir) {
+            Write-Color "[INFO] Pulizia cache Webpack stale: $CacheDir..." "Yellow"
+            try {
+                Remove-Item -Recurse -Force $CacheDir -ErrorAction SilentlyContinue
+                Write-Color "[SUCCESS] Cache eliminata con successo!" "Green"
+            } catch {
+                Write-Color "[WARN] Impossibile eliminare la cache: $_" "Yellow"
+            }
         }
     }
 
     Write-Color "================================================================" "Green"
     Write-Color "   INSTALLAZIONE DI STRATUMHEATMAP COMPLETATA CON SUCCESSO!     " "Green"
     Write-Color "================================================================" "Green"
+    Write-Color "" "White"
+    Write-Color "COMANDI CONSIGLIATI PER DOCKER COMPOSE:" "Cyan"
+    Write-Color "  cd '$ResolvedSupersetPath'" "White"
+    Write-Color "  # Modalità standard/non-dev (consigliata):" "Yellow"
+    Write-Color "  docker compose -f docker-compose-non-dev.yml up -d --build superset" "Green"
+    Write-Color "" "White"
+    Write-Color "  # Modalità sviluppo frontend (hot reload):" "Yellow"
+    Write-Color "  docker compose restart superset-node" "Green"
+    Write-Color "  oppure:" "Yellow"
+    Write-Color "  docker compose up -d --build superset-node" "Green"
+    Write-Color "" "White"
 }
