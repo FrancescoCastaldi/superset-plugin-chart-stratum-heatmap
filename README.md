@@ -5,176 +5,176 @@
 [![Apache Superset](https://img.shields.io/badge/Superset-3.x%20%7C%204.x%20%7C%206.x-green.svg)](#)
 [![Engine](https://img.shields.io/badge/Engine-Apache%20ECharts%205.x-orange.svg)](#)
 
-> **StratumHeatmap** è un plugin di visualizzazione ad alte prestazioni per **Apache Superset** progettato per l'analisi avanzata di matrici bidimensionali di densità e volumi (es. **Giorno della Settimana $\times$ Ora del Contatto** per la programmazione sanitaria e il dimensionamento dei canali di accesso).
+> **StratumHeatmap** is an enterprise-grade, high-performance visualization plugin for **Apache Superset** engineered for deep two-dimensional matrix analysis of volume and density distributions (e.g., **Day of Week $\times$ Hour of Day** for healthcare demand planning, call center workload optimization, and capacity management).
 
 ---
 
-## 🌟 Caratteristiche Principali
+## 🌟 Key Features
 
-* **Motore Grafico Apache ECharts (`echarts/heatmap`):**
-  * Rendering fluido Canvas a 60 fps con gestione automatica del resize (`ResizeObserver`).
-  * Bordi e raggio di curvatura delle celle personalizzabili (`cellRadius`, `cellBorderWidth`).
-* **Dual Mode VisualMap (Slider Continuo vs Scaglioni):**
-  * Modalità Continua con slider interattivo per filtrare visivamente range numerici di intensità.
-  * Modalità Piecewise a classi/scaglioni discreti con legenda a blocchi cliccabile.
-* **Cross-Filtering Nativo Superset (`emit_filter`):**
-  * Pieno supporto a `Behavior.InteractiveChart`.
-  * Cliccando su una qualsiasi cella della matrice (es. *Giovedì ore 08:00*), il chart emette istantaneamente il filtro sia sulla colonna X che sulla colonna Y, aggiornando tutti gli altri grafici della dashboard.
-* **Algoritmo di Contrasto Automatico WCAG 2.1:**
-  * Calcolo in tempo reale della luminanza relativa per invertire il colore del testo dei numeri dentro le celle (testo bianco su celle scure, testo blu scuro su celle chiare) per garantire leggibilità assoluta.
-* **Ordinamento Cronologico Intelligente (`smartSort`):**
-  * Riconosce automaticamente i giorni della settimana (in italiano o inglese, es. `1 - Lunedì`..`7 - Domenica`, `Lunedì`..`Domenica`, `Mon`..`Sun`) e le ore (`00:00`..`23:00`), ordinandoli cronologicamente senza bisogno di artifici SQL.
-* **Rich HTML Tooltip Multidimensionale:**
-  * Mostra coordinate `[X × Y]`, valore assoluto, `% sul totale di riga`, `% sul totale di colonna` e `% sul grand total`.
-* **Palette Aziendale Integrata:**
-  * Default con la palette corporate **Waves of Blue** (`#eef4f9` $\to$ `#bcd5ea` $\to$ `#7aa8cf` $\to$ `#3a6a9b` $\to$ `#1c3d5e`), con supporto a tutte le palette Superset.
-* **Anteprima Grafica (Thumbnail Gallery):**
-  * Include `thumbnail.png`, `thumbnail-dark.png` ed `example.png` integrati nei metadati per la modale di selezione grafici di Superset.
+* **Apache ECharts Engine (`echarts/heatmap`):**
+  * Smooth 60 fps Canvas rendering with automatic resize observer integration (`ResizeObserver`).
+  * Configurable cell borders and border radius (`cellRadius`, `cellBorderWidth`).
+* **Dual-Mode VisualMap (Continuous Slider vs Discrete Piecewise):**
+  * Continuous mode with an interactive gradient slider to visually filter intensity ranges.
+  * Piecewise mode with clickable discrete legend intervals.
+* **Native Superset Cross-Filtering (`emit_filter`):**
+  * Full support for `Behavior.InteractiveChart`.
+  * Clicking any cell in the matrix (e.g., *Thursday 08:00 AM*) instantly emits coordinated filters on both the X-axis and Y-axis columns, dynamically cross-filtering other charts on the dashboard.
+* **WCAG 2.1 Automated Contrast Calculation:**
+  * Real-time relative luminance calculation that inverts in-cell number colors (white text on dark cells, dark navy text on light cells) to guarantee optimal contrast and accessibility.
+* **Intelligent Chronological Sorter (`smartSort`):**
+  * Automatically recognizes days of the week (Italian and English, e.g., `1 - Lunedì`..`7 - Domenica`, `Mon`..`Sun`, `Monday`..`Sunday`) and hours (`00:00`..`23:00`), ordering them chronologically without requiring SQL sorter workarounds.
+* **Multidimensional Rich HTML Tooltips:**
+  * Displays `[X × Y]` coordinates, absolute metric values, `% of row total`, `% of column total`, and `% of grand total`.
+* **Integrated Corporate Color Palettes:**
+  * Defaults to the elegant **Waves of Blue** corporate palette (`#eef4f9` $\to$ `#bcd5ea` $\to$ `#7aa8cf` $\to$ `#3a6a9b` $\to$ `#1c3d5e`), with full support for all Superset color palettes.
+* **Gallery Visual Assets:**
+  * Bundled `thumbnail.png`, `thumbnail-dark.png`, and `example.png` for the native Superset chart picker modal.
 
 ---
 
-## 📁 Struttura della Repository
+## 📁 Repository Structure
 
 ```
-D:\Sviluppo\superset-plugin-chart-stratum-heatmap/
+superset-plugin-chart-stratum-heatmap/
 ├── package.json
 ├── tsconfig.json
 ├── README.md
-├── install.bat                         # Launcher unificato automatico
+├── install.bat                         # Unified Windows batch launcher
 ├── scripts/
-│   ├── install.js                      # Installer Node.js multipiattaforma (zero dipendenze)
-│   ├── install.ps1                     # Installer Windows PowerShell con cleanup cache
-│   ├── installer.py                    # Installer Python multipiattaforma avanzato
-│   ├── installer_gui.py                # Interfaccia grafica Desktop (Tkinter)
-│   └── generate_thumbnails.py          # Generatore asset di anteprima grafica
+│   ├── install.js                      # Cross-platform zero-dependency Node.js installer
+│   ├── install.ps1                     # PowerShell installer with cache cleanup
+│   ├── installer.py                    # Advanced cross-platform Python installer
+│   ├── installer_gui.py                # Desktop GUI installer (Tkinter)
+│   └── generate_thumbnails.py          # Thumbnail and gallery asset generator
 ├── src/
-│   ├── index.ts                        # Entry point plugin
-│   ├── types.ts                        # Interfacce TypeScript
+│   ├── index.ts                        # Plugin entry point
+│   ├── types.ts                        # TypeScript interfaces
 │   ├── plugin/
-│   │   ├── index.ts                    # Registrazione ChartPlugin e ChartMetadata
-│   │   ├── buildQuery.ts               # Query builder per /api/v1/chart/data
-│   │   ├── controlPanel.tsx            # Form controls Explore UI
-│   │   └── transformProps.ts           # Mappatura coordinate, percentuali e min/max
+│   │   ├── index.ts                    # ChartPlugin and ChartMetadata registration
+│   │   ├── buildQuery.ts               # Query builder for /api/v1/chart/data
+│   │   ├── controlPanel.tsx            # Explore UI form controls
+│   │   └── transformProps.ts           # Coordinate mapping, percentages, and min/max
 │   ├── components/
-│   │   └── StratumHeatmap.tsx          # Componente React con Apache ECharts
+│   │   └── StratumHeatmap.tsx          # React component wrapping Apache ECharts
 │   ├── utils/
-│   │   ├── contrast.ts                 # Calcolo luminanza e contrasto WCAG
-│   │   ├── sorters.ts                  # Ordinatore cronologico giorni e ore
-│   │   └── formatting.ts               # Formattazione valori e percentuali
+│   │   ├── contrast.ts                 # WCAG luminance and contrast calculation
+│   │   ├── sorters.ts                  # Smart chronological days and hours sorter
+│   │   └── formatting.ts               # Number and percentage formatters
 │   └── images/
-│       ├── thumbnail.png               # Thumbnail per lista chart Superset
-│       ├── thumbnail-dark.png          # Thumbnail per tema scuro
-│       └── example.png                 # Immagine di esempio galleria
+│       ├── thumbnail.png               # Chart picker thumbnail (light)
+│       ├── thumbnail-dark.png          # Chart picker thumbnail (dark)
+│       └── example.png                 # Gallery preview image
 ```
 
 ---
 
-## 🚀 Installazione Rapida in Apache Superset
+## 🚀 Quick Installation in Apache Superset
 
-La repository include una suite completa di installer automatici con **auto-rilevamento** della cartella Superset (es. `D:\Sviluppo\superset`, cartelle sorelle `../superset`, desktop o percorsi utente):
+The repository includes a suite of automated installation scripts with **auto-detection** for Apache Superset root directories (e.g., `D:\Sviluppo\superset`, sibling `../superset`, user home, or desktop paths):
 
-### Opzione 1: Interfaccia Grafica Desktop GUI (Consigliata per Windows)
-Fai semplicemente doppio clic su:
+### Option 1: Desktop GUI Installer (Recommended for Windows)
+Simply double-click:
 👉 **`install.bat`**  
-oppure avvia l'interfaccia grafica con:
+or launch the GUI via:
 ```bash
 python scripts/installer_gui.py
 ```
-Si aprirà una finestra desktop con anteprima del chart, rilevamento automatico del path, pulsante *Sfoglia...*, opzione per la pulizia della cache Webpack (`node_modules/.cache`) e console dei log in tempo reale.
+A desktop window will open displaying chart preview, path auto-detection, a *Browse...* folder picker, a Webpack cache cleaning toggle (`node_modules/.cache`), and a real-time console log.
 
-### Opzione 2: Installer Node.js Multipiattaforma (Zero Dipendenze)
-Script Node.js puro (`fs`, `path`, `readline`, `child_process`), eseguibile ovunque senza installare librerie esterne:
+### Option 2: Zero-Dependency Node.js Installer (Cross-Platform)
+Pure Node.js script (`fs`, `path`, `readline`, `child_process`), runnable on any system without extra dependencies:
 ```bash
-# Con auto-rilevamento interattivo della cartella Superset:
+# Interactive execution with auto-discovery:
 node scripts/install.js
 
-# Oppure specificando direttamente il percorso:
+# Or specify the path directly:
 node scripts/install.js "D:\Sviluppo\superset"
 ```
-Esegue automaticamente:
-1. Pulizia di eventuali vecchie versioni del plugin e deduplicazione delle registrazioni in `MainPreset`.
-2. Build TypeScript del plugin (`npm run build`) per verificare e generare `dist/`.
-3. Copia pulita e ordinata di `src`, `dist`, `package.json`, `tsconfig.json`, `README.md` escludendo file non necessari.
-4. Patch di `MainPreset.ts` / `MainPreset.js` (o `setupPlugins.ts`) con import e registrazione della chiave `stratum_heatmap`.
-5. Frontend Safety Cleanup di `superset-frontend/node_modules/.cache` per prevenire bundle stale.
-6. Riepilogo comandi Docker pronti all'uso.
+Automatically performs:
+1. Cleans up any prior plugin registrations in `MainPreset`.
+2. Compiles TypeScript sources (`npm run build`).
+3. Copies `src`, `dist`, `package.json`, `tsconfig.json`, and `README.md` into the Superset plugins tree.
+4. Patches `MainPreset.ts` / `MainPreset.js` (or `setupPlugins.ts`) registering the `stratum_heatmap` key.
+5. Cleans `superset-frontend/node_modules/.cache` to prevent stale bundles.
+6. Displays ready-to-run Docker commands.
 
-### Opzione 3: PowerShell Script
-Ideale per ambienti Windows PowerShell senza Python:
+### Option 3: PowerShell Script
+Ideal for Windows environments:
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/install.ps1
 
-# Oppure specificando la cartella:
+# Or specify the Superset path directly:
 powershell -ExecutionPolicy Bypass -File scripts/install.ps1 -SupersetPath "D:\Sviluppo\superset"
 ```
 
-### Opzione 4: Python CLI Multipiattaforma
+### Option 4: Python CLI (Cross-Platform)
 ```bash
-# Esecuzione con auto-rilevamento o interattivo:
+# Interactive / Auto-detection:
 python scripts/installer.py
 
-# Con percorso esplicito:
+# With explicit path:
 python scripts/installer.py --superset-path "D:\Sviluppo\superset"
 ```
 
 ---
 
-## 🐳 Comandi Docker Compose Post-Installazione
+## 🐳 Post-Installation Docker Compose Commands
 
-Una volta completata l'installazione tramite uno degli script sopra, esegui i seguenti comandi nella cartella radice di Superset per compilare il bundle frontend e avviare il servizio:
+Once installed, run the appropriate command in the Superset root directory to build the frontend bundle and start the service:
 
-### Modalità Standard / Non-Dev (Produzione & Collaudo)
-Ricostruisce l'immagine Superset con il frontend aggiornato e avvia il container in background:
+### Standard / Non-Dev Mode (Production & Staging)
+Rebuilds the Superset image with updated frontend plugins and launches containers in the background:
 ```bash
-cd /path/to/superset   # es. cd D:\Sviluppo\superset
+cd /path/to/superset   # e.g., cd D:\Sviluppo\superset
 docker compose -f docker-compose-non-dev.yml up -d --build superset
 ```
 
-### Modalità Sviluppo Frontend (Hot Reload su `superset-node`)
-Se hai Superset avviato con lo stack di sviluppo e il container `superset-node` attivo:
+### Frontend Development Mode (Hot Reload on `superset-node`)
+If running a development stack with an active `superset-node` container:
 ```bash
 cd /path/to/superset
-# Riavvia il compilatore Webpack del container frontend
+# Restart the container's Webpack dev server:
 docker compose restart superset-node
 
-# Oppure ricostruisci superset-node:
+# Or rebuild the node container:
 docker compose up -d --build superset-node
 ```
 
-### Modalità Sviluppo Locale Host (Senza Docker Frontend)
-Se compili il frontend direttamente sulla tua macchina host:
+### Local Host Development Mode (Without Docker Frontend)
+If building the frontend directly on your host machine:
 ```bash
 cd /path/to/superset/superset-frontend
 npm run dev-server
 ```
 
-Una volta terminata la compilazione, apri il browser su:
+Once compilation finishes, open your browser at:
 👉 **`http://localhost:8088`**  
-Crea una nuova visualizzazione (Chart) e troverai **StratumHeatmap** nella galleria dei grafici!
+Create a new chart and select **StratumHeatmap** from the gallery!
 
 ---
 
-## 🛠️ Registrazione Manuale Alternativa
+## 🛠️ Alternative Manual Registration
 
-Se preferisci effettuare la registrazione a mano senza script:
+To register the plugin manually without scripts:
 
-1. Copia l'intera cartella del plugin in `superset-frontend/plugins/superset-plugin-chart-stratum-heatmap`
-2. Modifica `superset-frontend/src/visualizations/presets/MainPreset.ts` (o `MainPreset.js` / `setupPlugins.ts`):
+1. Copy the plugin directory into `superset-frontend/plugins/superset-plugin-chart-stratum-heatmap`.
+2. Edit `superset-frontend/src/visualizations/presets/MainPreset.ts` (or `MainPreset.js` / `setupPlugins.ts`):
 
 ```typescript
 import { StratumHeatmapPlugin } from '../../../plugins/superset-plugin-chart-stratum-heatmap/src';
 
-// All'interno dell'array plugins di MainPreset:
+// Inside the plugins array in MainPreset:
 new StratumHeatmapPlugin().configure({ key: 'stratum_heatmap' }).register(),
 ```
-3. Rimuovi la cache stale per sicurezza:
+3. Remove stale Webpack cache:
 ```bash
 rm -rf superset-frontend/node_modules/.cache
 ```
 
 ---
 
-## 👨‍💻 Autore
+## 👨‍💻 Author
 
 **Francesco Castaldi**  
 *Lead Architect & BI Specialist*  
@@ -182,6 +182,7 @@ Repository: [github.com/FrancescoCastaldi/superset-plugin-chart-stratum-heatmap]
 
 ---
 
-## 📄 Licenza
+## 📄 License
 
-Distribuito sotto licenza **Apache 2.0**.
+Distributed under the **Apache License 2.0**.
+
