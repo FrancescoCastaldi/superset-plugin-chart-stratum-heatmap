@@ -32,6 +32,8 @@ describe('transformProps', () => {
       smartSort: true,
       xAxisSortAsc: true,
       yAxisSortAsc: true,
+      showRowTotals: false,
+      showColumnTotals: false,
     },
     queriesData: [
       {
@@ -204,4 +206,56 @@ describe('transformProps', () => {
     expect(transformed.matrixData).toHaveLength(1);
     expect((transformed.matrixData[0] as any).value[2]).toBe(15);
   });
+
+  it('generates marginal row, column, and grand totals with dedicated styling when enabled', () => {
+    const props = {
+      ...defaultChartProps,
+      formData: {
+        ...defaultChartProps.formData,
+        showRowTotals: true,
+        showColumnTotals: true,
+        totalLabel: 'Totale',
+      },
+    } as unknown as ChartProps;
+
+    const transformed = transformProps(props);
+
+    // Categories should have 'Totale' appended
+    expect(transformed.xCategories).toEqual(['Lunedì', 'Martedì', 'Totale']);
+    expect(transformed.yCategories).toEqual(['08:00', '09:00', 'Totale']);
+
+    // Total elements: 4 data cells + 2 row totals + 2 col totals + 1 grand total = 9 cells
+    expect(transformed.matrixData).toHaveLength(9);
+
+    // Min and Max values must NOT be distorted by grand total
+    expect(transformed.minValue).toBe(10);
+    expect(transformed.maxValue).toBe(40);
+
+    // Check row total cell for 08:00 (10 + 20 = 30)
+    const rowTotal08 = (transformed.matrixData as any[]).find(
+      d => d.value[3].xValue === 'Totale' && d.value[3].yValue === '08:00',
+    );
+    expect(rowTotal08).toBeDefined();
+    expect(rowTotal08.value[2]).toBe(30);
+    expect(rowTotal08.value[3].isRowTotal).toBe(true);
+    expect(rowTotal08.itemStyle.color).toBe('#f1f5f9');
+
+    // Check col total cell for Lunedì (10 + 40 = 50)
+    const colTotalLun = (transformed.matrixData as any[]).find(
+      d => d.value[3].xValue === 'Lunedì' && d.value[3].yValue === 'Totale',
+    );
+    expect(colTotalLun).toBeDefined();
+    expect(colTotalLun.value[2]).toBe(50);
+    expect(colTotalLun.value[3].isColTotal).toBe(true);
+
+    // Check grand total cell (100)
+    const grandTotalCell = (transformed.matrixData as any[]).find(
+      d => d.value[3].xValue === 'Totale' && d.value[3].yValue === 'Totale',
+    );
+    expect(grandTotalCell).toBeDefined();
+    expect(grandTotalCell.value[2]).toBe(100);
+    expect(grandTotalCell.value[3].isGrandTotal).toBe(true);
+    expect(grandTotalCell.itemStyle.color).toBe('#e2e8f0');
+  });
 });
+

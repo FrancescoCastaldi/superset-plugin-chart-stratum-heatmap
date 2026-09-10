@@ -29,6 +29,7 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
     xAxisDimension,
     yAxisDimension,
     activeCell,
+    totalLabel = 'Totale',
     onCellClick,
   } = props;
 
@@ -64,18 +65,22 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
       visualMapConfig.type = 'continuous';
     }
 
-    // Normalizzazione dati serie ECharts con evidenziazione cella attiva
+    // Normalizzazione dati serie ECharts con evidenziazione cella attiva e preservazione stile totali
     const seriesData = matrixData.map(item => {
       let coords: [number, number, number | null, HeatmapCellData];
       let labelColor: string | undefined;
+      let labelFontWeight: any;
       let cellColor: string | undefined;
+      let customItemStyle: any = {};
 
       if (Array.isArray(item)) {
         coords = item;
       } else {
         coords = item.value;
         labelColor = item.label?.color;
+        labelFontWeight = (item.label as any)?.fontWeight;
         cellColor = item.itemStyle?.color;
+        customItemStyle = item.itemStyle || {};
       }
 
       const meta = coords[3];
@@ -91,8 +96,9 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
         value: coords,
         itemStyle: {
           borderRadius: cellRadius,
-          borderColor: cellBorderColor,
-          borderWidth: cellBorderWidth,
+          borderColor: customItemStyle.borderColor || cellBorderColor,
+          borderWidth: customItemStyle.borderWidth !== undefined ? customItemStyle.borderWidth : cellBorderWidth,
+          ...customItemStyle,
         },
       };
 
@@ -101,9 +107,10 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
         datum.itemStyle.color = cellColor;
       }
 
-      if (labelColor) {
+      if (labelColor || labelFontWeight) {
         datum.label = {
           color: labelColor,
+          fontWeight: labelFontWeight || 600,
         };
       }
 
@@ -141,6 +148,69 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
           const meta: HeatmapCellData = item[3];
           if (!meta) return '';
 
+          // Tooltip dedicato: Gran Totale
+          if (meta.isGrandTotal) {
+            return `
+              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-width: 170px;">
+                <div style="font-weight: 700; font-size: 13px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 4px; color: #38bdf8;">
+                  ★ Totale Generale
+                </div>
+                <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px;">
+                  <span style="color: #94a3b8;">Valore Aggregato:</span>
+                  <span style="font-weight: 700; color: #38bdf8;">${meta.formattedValue}</span>
+                </div>
+                <div style="font-size: 10px; color: #94a3b8; margin-top: 6px; border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 4px;">
+                  Clicca per azzerare i filtri attivi
+                </div>
+              </div>
+            `;
+          }
+
+          // Tooltip dedicato: Totale di Riga
+          if (meta.isRowTotal) {
+            return `
+              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-width: 170px;">
+                <div style="font-weight: 700; font-size: 13px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 4px; color: #38bdf8;">
+                  Totale Riga: ${meta.yValue}
+                </div>
+                <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px;">
+                  <span style="color: #94a3b8;">Totale:</span>
+                  <span style="font-weight: 700; color: #38bdf8;">${meta.formattedValue}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; gap: 16px; font-size: 11px; color: #cbd5e1; margin-top: 4px; padding-top: 4px; border-top: 1px dashed rgba(255,255,255,0.15);">
+                  <span>% su volume totale:</span>
+                  <span><b>${formatPercentage(meta.totalPercentage)}</b></span>
+                </div>
+                <div style="font-size: 10px; color: #94a3b8; margin-top: 6px;">
+                  Clicca per filtrare su ${yAxisDimension}: "${meta.yValue}"
+                </div>
+              </div>
+            `;
+          }
+
+          // Tooltip dedicato: Totale di Colonna
+          if (meta.isColTotal) {
+            return `
+              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-width: 170px;">
+                <div style="font-weight: 700; font-size: 13px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 4px; color: #38bdf8;">
+                  Totale Colonna: ${meta.xValue}
+                </div>
+                <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px;">
+                  <span style="color: #94a3b8;">Totale:</span>
+                  <span style="font-weight: 700; color: #38bdf8;">${meta.formattedValue}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; gap: 16px; font-size: 11px; color: #cbd5e1; margin-top: 4px; padding-top: 4px; border-top: 1px dashed rgba(255,255,255,0.15);">
+                  <span>% su volume totale:</span>
+                  <span><b>${formatPercentage(meta.totalPercentage)}</b></span>
+                </div>
+                <div style="font-size: 10px; color: #94a3b8; margin-top: 6px;">
+                  Clicca per filtrare su ${xAxisDimension}: "${meta.xValue}"
+                </div>
+              </div>
+            `;
+          }
+
+          // Tooltip per cella ordinaria
           return `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
               <div style="font-weight: 700; font-size: 13px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 4px;">
@@ -270,6 +340,7 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
     cellBorderWidth,
     cellBorderColor,
     activeCell,
+    totalLabel,
   ]);
 
   // Inizializzazione istanza ECharts e gestione resize
@@ -296,7 +367,53 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
       const meta: HeatmapCellData = coords?.[3];
       if (!meta) return;
 
-      // Se la cella cliccata è già attiva, resetta il filtro (toggle)
+      // 1. Se la cella è il Gran Totale, resetta tutti i filtri
+      if (meta.isGrandTotal) {
+        onCellClick([]);
+        return;
+      }
+
+      // 2. Se è Totale di Riga: emette filtro unicamente sulla dimensione Y
+      if (meta.isRowTotal) {
+        if (
+          activeCell &&
+          activeCell.x === (totalLabel || 'Totale') &&
+          String(activeCell.y) === String(meta.yValue)
+        ) {
+          onCellClick([]);
+          return;
+        }
+        onCellClick([
+          {
+            col: yAxisDimension,
+            op: 'IN',
+            val: [meta.yValue],
+          },
+        ]);
+        return;
+      }
+
+      // 3. Se è Totale di Colonna: emette filtro unicamente sulla dimensione X
+      if (meta.isColTotal) {
+        if (
+          activeCell &&
+          String(activeCell.x) === String(meta.xValue) &&
+          activeCell.y === (totalLabel || 'Totale')
+        ) {
+          onCellClick([]);
+          return;
+        }
+        onCellClick([
+          {
+            col: xAxisDimension,
+            op: 'IN',
+            val: [meta.xValue],
+          },
+        ]);
+        return;
+      }
+
+      // 4. Cella ordinaria: se già attiva resetta (toggle), altrimenti emette filtro congiunto X e Y
       if (
         activeCell &&
         String(activeCell.x) === String(meta.xValue) &&
@@ -306,7 +423,6 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
         return;
       }
 
-      // Altrimenti emette cross-filter congiunto su X e Y
       onCellClick([
         {
           col: xAxisDimension,
@@ -323,7 +439,7 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
 
     chart.off('click');
     chart.on('click', handleClick);
-  }, [option, onCellClick, xAxisDimension, yAxisDimension, activeCell]);
+  }, [option, onCellClick, xAxisDimension, yAxisDimension, activeCell, totalLabel]);
 
   // Cleanup alla distruzione del componente
   useEffect(() => {

@@ -374,6 +374,60 @@ const config: ControlPanelConfig = {
         ],
       ],
     },
+    {
+      label: t('Customize: Totali di Riga & Colonna (Marginal Totals)'),
+      expanded: true,
+      controlSetRows: [
+        [
+          {
+            name: 'showRowTotals',
+            config: {
+              type: 'CheckboxControl',
+              label: t('Mostra Colonna Totali di Riga'),
+              renderTrigger: true,
+              default: true,
+              description: t('Aggiunge una colonna di riepilogo a destra con i totali di ciascuna riga.'),
+            },
+          },
+          {
+            name: 'showColumnTotals',
+            config: {
+              type: 'CheckboxControl',
+              label: t('Mostra Riga Totali di Colonna'),
+              renderTrigger: true,
+              default: true,
+              description: t('Aggiunge una riga di riepilogo in fondo con i totali di ciascuna colonna.'),
+            },
+          },
+        ],
+        [
+          {
+            name: 'totalLabel',
+            config: {
+              type: 'TextControl',
+              label: t('Etichetta Totale'),
+              renderTrigger: true,
+              default: 'Totale',
+              description: t('Testo visualizzato per le intestazioni di riga e colonna dei totali (es. Totale, Total, Somma).'),
+            },
+          },
+          {
+            name: 'totalAggregation',
+            config: {
+              type: 'SelectControl',
+              label: t('Tipo Aggregazione Totali'),
+              default: 'sum',
+              choices: [
+                ['sum', t('Somma (Totale Cumulato)')],
+                ['avg', t('Media (Valore Medio)')],
+              ],
+              renderTrigger: true,
+              description: t('Metodo di aggregazione per calcolare i totali marginali di riga e colonna.'),
+            },
+          },
+        ],
+      ],
+    },
   ],
 };
 

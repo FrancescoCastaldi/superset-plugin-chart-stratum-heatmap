@@ -32,6 +32,9 @@ export interface StratumHeatmapFormData extends QueryFormData {
   cellBorderColor?: string;
   showRowTotals?: boolean;
   showColumnTotals?: boolean;
+  totalLabel?: string;
+  totalAggregation?: 'sum' | 'avg';
+  totalsBackgroundColor?: string;
   emitFilter?: boolean;
   smartSort?: boolean;
   yAxisSortAsc?: boolean;
@@ -53,6 +56,9 @@ export interface HeatmapCellData {
   rowPercentage: number;
   colPercentage: number;
   totalPercentage: number;
+  isRowTotal?: boolean;
+  isColTotal?: boolean;
+  isGrandTotal?: boolean;
 }
 
 export interface StratumHeatmapChartProps extends ChartProps {
@@ -106,6 +112,10 @@ export interface StratumHeatmapTransformedProps {
   xAxisDimension: string;
   yAxisDimension: string;
   activeCell?: { x: string; y: string } | null;
+  showRowTotals?: boolean;
+  showColumnTotals?: boolean;
+  totalLabel?: string;
+  totalAggregation?: 'sum' | 'avg';
   onCellClick?: (filter: { col: string; op: 'IN'; val: string[] }[]) => void;
   filterState?: {
     x?: string;

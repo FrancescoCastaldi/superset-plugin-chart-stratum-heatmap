@@ -20,6 +20,10 @@
 * **Native Superset Cross-Filtering (`emit_filter`):**
   * Full support for `Behavior.InteractiveChart`.
   * Clicking any cell in the matrix (e.g., *Thursday 08:00 AM*) instantly emits coordinated filters on both the X-axis and Y-axis columns, dynamically cross-filtering other charts on the dashboard.
+* **Integrated Marginal Totals (Row, Column & Grand Totals):**
+  * Dedicated summary rows and columns with independent neutral styling and reinforced borders, preserving the matrix heatmap contrast.
+  * Supports both Sum and Average aggregations with customizable labels (`Totale`).
+  * Intelligent single-dimension cross-filtering (clicking a row total filters only that row across all columns, clicking a column total filters only that column, clicking grand total resets filters).
 * **WCAG 2.1 Automated Contrast Calculation:**
   * Real-time relative luminance calculation that inverts in-cell number colors (white text on dark cells, dark navy text on light cells) to guarantee optimal contrast and accessibility.
 * **Intelligent Chronological Sorter (`smartSort`):**

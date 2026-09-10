@@ -49,6 +49,11 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     smartSort = true,
     xAxisSortAsc = true,
     yAxisSortAsc = true,
+    showRowTotals = true,
+    showColumnTotals = true,
+    totalLabel = 'Totale',
+    totalAggregation = 'sum',
+    totalsBackgroundColor = '#f1f5f9',
   } = fd;
 
   // Risoluzione metrica
@@ -57,21 +62,29 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
       ? metric
       : metric?.label || metric?.column?.column_name || Object.keys(data[0] || {})[2] || 'value';
 
-  // 1. Estrazione categorie uniche
+  // 1. Estrazione categorie uniche (escludendo eventuale etichetta totale da dati grezzi)
   const rawXCategories = Array.from(
     new Set(data.map(d => String(d[xAxisDimension] ?? '(vuoto)'))),
-  );
+  ).filter(cat => cat !== totalLabel);
   const rawYCategories = Array.from(
     new Set(data.map(d => String(d[yAxisDimension] ?? '(vuoto)'))),
-  );
+  ).filter(cat => cat !== totalLabel);
 
   // 2. Ordinamento intelligente o naturale
-  const xCategories = smartSort
+  const xCategoriesSorted = smartSort
     ? smartSortCategories(rawXCategories, xAxisSortAsc)
     : rawXCategories;
-  const yCategories = smartSort
+  const yCategoriesSorted = smartSort
     ? smartSortCategories(rawYCategories, yAxisSortAsc)
     : rawYCategories;
+
+  // Categorie finali (con colonna/riga Totale in coda se abilitate)
+  const xCategories = showRowTotals
+    ? [...xCategoriesSorted, totalLabel]
+    : xCategoriesSorted;
+  const yCategories = showColumnTotals
+    ? [...yCategoriesSorted, totalLabel]
+    : yCategoriesSorted;
 
   // 3. Risoluzione palette colori predefinita o dinamica
   const chosenScheme = linearColorScheme || colorScheme || 'wavesOfBlue';
@@ -91,6 +104,8 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
   data.forEach(d => {
     const xVal = String(d[xAxisDimension] ?? '(vuoto)');
     const yVal = String(d[yAxisDimension] ?? '(vuoto)');
+    if (xVal === totalLabel || yVal === totalLabel) return;
+
     const rawNum = d[metricName];
     const val = typeof rawNum === 'number' ? rawNum : Number(rawNum) || 0;
 
@@ -101,6 +116,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     colTotals.set(xVal, (colTotals.get(xVal) || 0) + val);
     grandTotal += val;
 
+    // FONDAMENTALE: la scala colori si calcola SOLO sui valori reali delle celle
     if (val < minValue) minValue = val;
     if (val > maxValue) maxValue = val;
   });
@@ -124,23 +140,30 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
       activeCell = fs.activeCell;
     } else if (fs.x && fs.y) {
       activeCell = { x: String(fs.x), y: String(fs.y) };
-    } else if (Array.isArray(fs.filters) && fs.filters.length >= 2) {
+    } else if (Array.isArray(fs.filters)) {
       const xFilter = fs.filters.find((f: any) => f.col === xAxisDimension);
       const yFilter = fs.filters.find((f: any) => f.col === yAxisDimension);
       if (xFilter?.val?.[0] && yFilter?.val?.[0]) {
         activeCell = { x: String(xFilter.val[0]), y: String(yFilter.val[0]) };
+      } else if (xFilter?.val?.[0]) {
+        activeCell = { x: String(xFilter.val[0]), y: totalLabel };
+      } else if (yFilter?.val?.[0]) {
+        activeCell = { x: totalLabel, y: String(yFilter.val[0]) };
       }
     } else if (Array.isArray(fs.value) && fs.value.length >= 2) {
       activeCell = { x: String(fs.value[0]), y: String(fs.value[1]) };
     }
   }
 
-  // 6. Mappatura finale per ECharts Matrix con contrasto WCAG per-datum
+  // 6. Mappatura finale per ECharts Matrix con contrasto WCAG e gestione celle totali
   const valRange = maxValue - minValue || 1;
   const matrixData: HeatmapDatum[] = [];
+  const dataXCount = xCategoriesSorted.length;
+  const dataYCount = yCategoriesSorted.length;
 
-  xCategories.forEach((xVal, xIdx) => {
-    yCategories.forEach((yVal, yIdx) => {
+  // 6.1 Celle dati ordinarie
+  xCategoriesSorted.forEach((xVal, xIdx) => {
+    yCategoriesSorted.forEach((yVal, yIdx) => {
       const key = `${xVal}___${yVal}`;
       const val = gridMap.has(key) ? (gridMap.get(key) as number) : 0;
       const rTot = rowTotals.get(yVal) || 0;
@@ -172,6 +195,8 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
         value: [xIdx, yIdx, val, cellMeta],
         itemStyle: {
           color: cellBg,
+          borderColor: cellBorderColor,
+          borderWidth: cellBorderWidth,
         },
         label: {
           color: autoContrastText ? optimalTextColor : '#1c3d5e',
@@ -182,7 +207,123 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     });
   });
 
-  // 7. Handler per Cross-Filtering verso Superset Dashboard con supporto toggle deselezione
+  // 6.2 Colonna Totali di Riga (posta a xIdx = dataXCount)
+  if (showRowTotals) {
+    const totalXIdx = dataXCount;
+    yCategoriesSorted.forEach((yVal, yIdx) => {
+      const sumVal = rowTotals.get(yVal) || 0;
+      const val = totalAggregation === 'avg' ? (dataXCount > 0 ? sumVal / dataXCount : 0) : sumVal;
+
+      const cellMeta: HeatmapCellData = {
+        xValue: totalLabel,
+        yValue: yVal,
+        xIndex: totalXIdx,
+        yIndex: yIdx,
+        value: val,
+        formattedValue: formatMetricValue(val, 'SMART_NUMBER'),
+        rowTotal: sumVal,
+        colTotal: 0,
+        grandTotal,
+        rowPercentage: 100,
+        colPercentage: 0,
+        totalPercentage: grandTotal > 0 ? (sumVal / grandTotal) * 100 : 0,
+        isRowTotal: true,
+      };
+
+      matrixData.push({
+        value: [totalXIdx, yIdx, val, cellMeta],
+        itemStyle: {
+          color: totalsBackgroundColor,
+          borderColor: '#94a3b8',
+          borderWidth: Math.max(cellBorderWidth, 1.5),
+        },
+        label: {
+          color: '#0f172a',
+          fontSize: valueFontSize,
+          show: showValues,
+        },
+      });
+    });
+  }
+
+  // 6.3 Riga Totali di Colonna (posta a yIdx = dataYCount)
+  if (showColumnTotals) {
+    const totalYIdx = dataYCount;
+    xCategoriesSorted.forEach((xVal, xIdx) => {
+      const sumVal = colTotals.get(xVal) || 0;
+      const val = totalAggregation === 'avg' ? (dataYCount > 0 ? sumVal / dataYCount : 0) : sumVal;
+
+      const cellMeta: HeatmapCellData = {
+        xValue: xVal,
+        yValue: totalLabel,
+        xIndex: xIdx,
+        yIndex: totalYIdx,
+        value: val,
+        formattedValue: formatMetricValue(val, 'SMART_NUMBER'),
+        rowTotal: 0,
+        colTotal: sumVal,
+        grandTotal,
+        rowPercentage: 0,
+        colPercentage: 100,
+        totalPercentage: grandTotal > 0 ? (sumVal / grandTotal) * 100 : 0,
+        isColTotal: true,
+      };
+
+      matrixData.push({
+        value: [xIdx, totalYIdx, val, cellMeta],
+        itemStyle: {
+          color: totalsBackgroundColor,
+          borderColor: '#94a3b8',
+          borderWidth: Math.max(cellBorderWidth, 1.5),
+        },
+        label: {
+          color: '#0f172a',
+          fontSize: valueFontSize,
+          show: showValues,
+        },
+      });
+    });
+  }
+
+  // 6.4 Cella Incrocio Totale Generale (Grand Total)
+  if (showRowTotals && showColumnTotals) {
+    const totalXIdx = dataXCount;
+    const totalYIdx = dataYCount;
+    const totalCells = dataXCount * dataYCount;
+    const val = totalAggregation === 'avg' ? (totalCells > 0 ? grandTotal / totalCells : 0) : grandTotal;
+
+    const cellMeta: HeatmapCellData = {
+      xValue: totalLabel,
+      yValue: totalLabel,
+      xIndex: totalXIdx,
+      yIndex: totalYIdx,
+      value: val,
+      formattedValue: formatMetricValue(val, 'SMART_NUMBER'),
+      rowTotal: grandTotal,
+      colTotal: grandTotal,
+      grandTotal,
+      rowPercentage: 100,
+      colPercentage: 100,
+      totalPercentage: 100,
+      isGrandTotal: true,
+    };
+
+    matrixData.push({
+      value: [totalXIdx, totalYIdx, val, cellMeta],
+      itemStyle: {
+        color: '#e2e8f0',
+        borderColor: '#475569',
+        borderWidth: Math.max(cellBorderWidth + 1, 2),
+      },
+      label: {
+        color: '#0f172a',
+        fontSize: valueFontSize + 1,
+        show: showValues,
+      },
+    });
+  }
+
+  // 7. Handler per Cross-Filtering verso Superset Dashboard con supporto totali monodimensionali
   const onCellClick = (filters: { col: string; op: 'IN'; val: string[] }[]) => {
     if (!emitFilter || !hooks?.setDataMask) return;
 
@@ -204,13 +345,16 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     const clickedY = filters.find(f => f.col === yAxisDimension)?.val[0];
 
     // Se la cella cliccata è già attiva, deseleziona (toggle off)
-    if (
+    const isSameSingleX = !clickedY && activeCell?.x === clickedX && activeCell?.y === totalLabel;
+    const isSameSingleY = !clickedX && activeCell?.y === clickedY && activeCell?.x === totalLabel;
+    const isSameDouble =
       activeCell &&
       clickedX !== undefined &&
       clickedY !== undefined &&
       String(activeCell.x) === String(clickedX) &&
-      String(activeCell.y) === String(clickedY)
-    ) {
+      String(activeCell.y) === String(clickedY);
+
+    if (isSameDouble || isSameSingleX || isSameSingleY) {
       hooks.setDataMask({
         extraFormData: {
           filters: [],
@@ -224,13 +368,22 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
       return;
     }
 
+    const newActiveCell =
+      clickedX !== undefined && clickedY !== undefined
+        ? { x: clickedX, y: clickedY }
+        : clickedX !== undefined
+        ? { x: clickedX, y: totalLabel }
+        : clickedY !== undefined
+        ? { x: totalLabel, y: clickedY }
+        : null;
+
     hooks.setDataMask({
       extraFormData: {
         filters,
       },
       filterState: {
         value: filters.map(f => f.val[0]),
-        activeCell: clickedX !== undefined && clickedY !== undefined ? { x: clickedX, y: clickedY } : null,
+        activeCell: newActiveCell,
         filters,
       },
     });
@@ -263,8 +416,11 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     xAxisDimension,
     yAxisDimension,
     activeCell,
+    showRowTotals,
+    showColumnTotals,
+    totalLabel,
+    totalAggregation,
     onCellClick,
     filterState: filterState as any,
   };
 }
-
