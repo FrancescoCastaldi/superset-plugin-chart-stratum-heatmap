@@ -157,6 +157,20 @@ if (-not $SkipBuild) {
     Write-Color "=== FASE 1: Compilazione TypeScript del Plugin ===" "Cyan"
     $NpmCmd = Get-Command "npm" -ErrorAction SilentlyContinue
     if ($NpmCmd) {
+        $PluginNodeModules = Join-Path $ResolvedPluginPath "node_modules"
+        if (-not (Test-Path $PluginNodeModules)) {
+            Write-Color "[INFO] 'node_modules' non trovato. Installazione automatica dipendenze (npm install)..." "Yellow"
+            $OrigLoc = Get-Location
+            try {
+                Set-Location $ResolvedPluginPath
+                & $NpmCmd.Source install
+            } catch {
+                Write-Color "[WARN] Avviso durante npm install: $_" "Yellow"
+            } finally {
+                Set-Location $OrigLoc
+            }
+        }
+
         Write-Color "[INFO] Esecuzione 'npm run build' in '$ResolvedPluginPath'..." "Yellow"
         $OrigLoc = Get-Location
         try {
