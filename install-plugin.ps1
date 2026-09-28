@@ -158,17 +158,25 @@ if (-not $SkipBuild) {
     $NpmCmd = Get-Command "npm" -ErrorAction SilentlyContinue
     if ($NpmCmd) {
         $PluginNodeModules = Join-Path $ResolvedPluginPath "node_modules"
-        if (-not (Test-Path $PluginNodeModules)) {
-            Write-Color "[INFO] 'node_modules' non trovato. Installazione automatica dipendenze (npm install)..." "Yellow"
+        $LocalTsc = Join-Path $PluginNodeModules "typescript\lib\tsc.js"
+        if (-not (Test-Path $LocalTsc)) {
+            Write-Color "[INFO] Dipendenze non pronte (typescript locale mancante). Esecuzione automatica 'npm install --legacy-peer-deps'..." "Yellow"
             $OrigLoc = Get-Location
             try {
                 Set-Location $ResolvedPluginPath
-                & $NpmCmd.Source install
+                & $NpmCmd.Source install --legacy-peer-deps
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Color "[SUCCESS] Dipendenze installate (npm install --legacy-peer-deps)." "Green"
+                } else {
+                    Write-Color "[WARN] 'npm install --legacy-peer-deps' ha restituito codice $LASTEXITCODE. Si prosegue con i file presenti." "Yellow"
+                }
             } catch {
                 Write-Color "[WARN] Avviso durante npm install: $_" "Yellow"
             } finally {
                 Set-Location $OrigLoc
             }
+        } else {
+            Write-Color "[INFO] Dipendenze gia' presenti (typescript locale rilevato)." "Gray"
         }
 
         Write-Color "[INFO] Esecuzione 'npm run build' in '$ResolvedPluginPath'..." "Yellow"

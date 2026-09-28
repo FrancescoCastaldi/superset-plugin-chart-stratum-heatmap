@@ -15,7 +15,7 @@
     "src"
   ],
   "scripts": {
-    "build": "tsc --build || node ./node_modules/typescript/lib/tsc.js --build || npx tsc --build",
+    "build": "tsc --project tsconfig.json || node node_modules/typescript/lib/tsc.js --project tsconfig.json || npx tsc --project tsconfig.json",
     "clean": "rimraf dist",
     "test": "vitest run",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
@@ -62,7 +62,7 @@
     "echarts": "^5.4.3",
     "prettier": "^3.2.5",
     "rimraf": "^5.0.5",
-    "typescript": "^5.3.3",
+    "typescript": "~5.9.2",
     "vitest": "^4.1.0"
   }
 }
