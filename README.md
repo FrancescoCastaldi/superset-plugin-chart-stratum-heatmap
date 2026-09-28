@@ -64,12 +64,12 @@
 
 ```mermaid
 flowchart LR
-    A[Superset Explore / Dashboard] -->|FormData & Control Values| B[buildQuery.ts]
-    B -->|API v1 Chart Data Query| C[Superset Backend / Database]
+    A[Superset Explore or Dashboard] -->|FormData and Control Values| B[buildQuery.ts]
+    B -->|API v1 Chart Data Query| C[Superset Backend Engine]
     C -->|Aggregated Matrix Records| D[transformProps.ts]
-    D -->|Marginal Totals & Smart Chrono Sort| E[StratumHeatmap.tsx]
-    E -->|WCAG Contrast & VisualMap Integration| F[Apache ECharts 5.x]
-    F -->|Cell / Total Click| G[setDataMask Multi-Filter]
+    D -->|Marginal Totals and Smart Chrono Sort| E[StratumHeatmap.tsx]
+    E -->|WCAG Contrast and VisualMap Integration| F[Apache ECharts 5.x Canvas]
+    F -->|Cell or Total Click| G[setDataMask Multi-Filter]
     G -->|Interactive Filter Broadcast| A
 ```
 
@@ -173,23 +173,35 @@ Visit `http://localhost:8088`, create a new chart, and pick **StratumHeatmap** f
 
 ## 🛠️ Explore Control Panel Reference
 
-| Section | Control | Type | Description |
-|:---|:---|:---|:---|
-| **Query Configuration** | `X-Axis Dimension` | Select | Column for the horizontal matrix axis (e.g., `Day of Week`). |
-| | `Y-Axis Dimension` | Select | Column for the vertical matrix axis (e.g., `Hour of Day`). |
-| | `Metric / Cell Value` | Metric | Quantitative metric measuring cell intensity (e.g., `Booking Volume`). |
-| **Color & Palette** | `Color Palette` | Select | Color scheme: `wavesOfBlue` (Corporate), `supersetColors`, `emeraldHeat`, etc. |
-| | `Invert Color Palette` | Checkbox | Reverses color ramp direction. |
-| | `VisualMap Type` | Select | Legend mode: `continuous` (gradient slider) or `piecewise` (discrete intervals). |
-| **Cell Formatting** | `Show Cell Values` | Checkbox | Renders numeric values directly inside matrix cells. |
-| | `Cell Border Radius` | Slider | Corner rounding in pixels (0px to 8px). |
-| | `Cell Border Width` | Slider | Border thickness separating matrix cells. |
-| **Marginal Totals** | `Show Row Totals` | Checkbox | Displays marginal summary column at the right edge of the grid. |
-| | `Show Column Totals` | Checkbox | Displays marginal summary row at the bottom edge of the grid. |
-| | `Totals Aggregation` | Select | Aggregation method for marginal summaries (`sum` or `average`). |
-| | `Totals Label` | Text | Custom heading for summary rows and columns (default: `Total`). |
-| **Sorting & Display** | `Enable Smart Sort` | Checkbox | Chronologically sorts day names and 24-hour timestamps automatically. |
-| | `Emit Cross-Filters` | Checkbox | Enables multi-dimension `setDataMask` cross-filtering on cell click. |
+| Section | Control (`name`) | UI Label | Type | Default | Description |
+|:---|:---|:---|:---|:---|:---|
+| **Query Configuration** | `xAxisDimension` | X-Axis Dimension (Columns) | Select | — | Dimension for horizontal axis (e.g., `Day of Week`). |
+| | `yAxisDimension` | Y-Axis Dimension (Rows) | Select | — | Dimension for vertical axis (e.g., `Hour of Day`). |
+| | `metric` | Metric / Cell Value | Metric | — | Quantitative metric measuring cell intensity. |
+| **Color & Palette** | `linearColorScheme` | Color Palette | Palette | `wavesOfBlue` | Gradient schemes: `wavesOfBlue` (Corporate), `supersetColors`, `emeraldHeat`, `sunsetWarm`. |
+| | `reversePalette` | Invert Color Ramp | Checkbox | `false` | Reverses gradient ramp direction (darkest to lightest). |
+| | `visualMapMode` | Color Scale Mode | Select | `continuous` | Scale mode: `continuous` (smooth slider) or `piecewise` (discrete interval buckets). |
+| | `piecewiseBuckets` | Discrete Classes Count | Slider | `5` | Number of discrete buckets when `visualMapMode` is `piecewise` (range: 2 – 10). |
+| | `customMinValue` | Custom Minimum Value | Text | `null` | Optional fixed lower bound for gradient normalization. |
+| | `customMaxValue` | Custom Maximum Value | Text | `null` | Optional fixed upper bound to prevent outlier skewing. |
+| **Cell Styling** | `cellRadius` | Cell Corner Radius | Slider | `4` | Corner rounding in pixels (range: 0px – 16px). |
+| | `cellBorderWidth` | Cell Margin / Spacing | Slider | `2` | Border thickness separating matrix cells (range: 0px – 8px). |
+| | `cellBorderColor` | Cell Border Color | Text | `#ffffff` | Hex color code for matrix grid separators. |
+| | `zeroCellNeutral` | Neutral Zero Cells | Checkbox | `true` | Tints 0-value cells in subtle neutral grey (`#f1f5f9`). |
+| **Labels & Typography** | `showValues` | Show Numbers in Cells | Checkbox | `true` | Displays exact numeric value inside each cell. |
+| | `valueFontSize` | Value Font Size | Slider | `11` | In-cell numeric label typography size (8px – 18px). |
+| | `showZeroValues` | Show "0" on Empty Cells | Checkbox | `false` | When unchecked, zero cells remain clean and uncluttered. |
+| | `autoContrastText` | WCAG Contrast Inversion | Checkbox | `true` | Automatically flips text to white/navy using relative luminance. |
+| | `smartSort` | Smart Chronological Sort | Checkbox | `true` | Auto-orders days (`Mon`..`Sun`) and 24h timestamps (`00:00`..`23:00`). |
+| | `xAxisLabelRotation` | X-Axis Label Rotation | Select | `0` | Orientation: `0°`, `30°`, `45°`, or `90°`. |
+| **Legend & Tooltip** | `showLegend` | Show Color Scale Legend | Checkbox | `true` | Renders VisualMap reference slider/buckets. |
+| | `legendPosition` | Legend Placement | Select | `bottom` | Position: `bottom` (horizontal), `top`, or `right` (vertical). |
+| | `showPercentages` | Advanced Tooltip % | Checkbox | `true` | Tooltip presents % row, % column, and % grand total. |
+| | `emitFilter` | Interactive Cross-Filter | Checkbox | `true` | Clicking any cell emits coordinated X/Y filter events. |
+| **Marginal Totals** | `showRowTotals` | Show Row Totals Column | Checkbox | `true` | Adds summary column on the right edge. |
+| | `showColumnTotals` | Show Column Totals Row | Checkbox | `true` | Adds summary row along the bottom edge. |
+| | `totalLabel` | Totals Header Label | Text | `"Totale"` | Custom heading for summary rows/columns. |
+| | `totalAggregation` | Totals Aggregation | Select | `sum` | Aggregation method: `sum` (cumulative) or `avg` (mean). |
 
 ---
 

@@ -20,6 +20,7 @@ export interface StratumHeatmapFormData extends QueryFormData {
   piecewiseBuckets?: number;
   showLegend?: boolean;
   legendPosition?: 'bottom' | 'top' | 'right';
+  xAxisPosition?: 'top' | 'bottom';
   xAxisLabelRotation?: number;
   showValues?: boolean;
   valueFontSize?: number;
@@ -97,6 +98,7 @@ export interface StratumHeatmapTransformedProps {
   piecewiseBuckets?: number;
   showLegend?: boolean;
   legendPosition?: 'bottom' | 'top' | 'right';
+  xAxisPosition?: 'top' | 'bottom';
   xAxisLabelRotation?: number;
   colorRange: string[];
   showValues: boolean;

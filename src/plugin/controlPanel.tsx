@@ -292,6 +292,20 @@ const config: ControlPanelConfig = {
               description: t('Ruota le etichette delle colonne per evitare sovrapposizioni.'),
             },
           },
+          {
+            name: 'xAxisPosition',
+            config: {
+              type: 'SelectControl',
+              label: t('Posizione Asse X (Giorni/Colonne)'),
+              default: 'top',
+              renderTrigger: true,
+              choices: [
+                ['top', t('In alto (Stile Calendario / Outlook)')],
+                ['bottom', t('In basso (Standard)')],
+              ],
+              description: t('Scegli se posizionare i giorni e le colonne in alto o in basso.'),
+            },
+          },
         ],
         [
           {

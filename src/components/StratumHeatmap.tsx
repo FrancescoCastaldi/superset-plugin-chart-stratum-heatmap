@@ -16,6 +16,7 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
     piecewiseBuckets = 5,
     showLegend = true,
     legendPosition = 'bottom',
+    xAxisPosition = 'top',
     xAxisLabelRotation = 0,
     colorRange,
     showValues,
@@ -127,8 +128,9 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
       return datum;
     });
 
-    const gridBottom = !showLegend ? 28 : (legendPosition === 'bottom' ? 65 : 28);
-    const gridTop = showLegend && legendPosition === 'top' ? 55 : 24;
+    const isTopX = xAxisPosition === 'top';
+    const gridBottom = !showLegend ? (isTopX ? 16 : 32) : (legendPosition === 'bottom' ? 65 : (isTopX ? 16 : 32));
+    const gridTop = showLegend && legendPosition === 'top' ? 65 : (isTopX ? 42 : 24);
     const gridRight = showLegend && legendPosition === 'right' ? 80 : 28;
 
     return {
@@ -251,6 +253,7 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
       },
       xAxis: {
         type: 'category',
+        position: xAxisPosition,
         data: xCategories,
         splitArea: {
           show: false,
@@ -329,6 +332,7 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
     piecewiseBuckets,
     showLegend,
     legendPosition,
+    xAxisPosition,
     xAxisLabelRotation,
     colorRange,
     showValues,
