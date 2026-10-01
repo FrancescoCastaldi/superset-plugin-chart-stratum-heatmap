@@ -7,19 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.1] - 2026-09-28
-
+## [0.2.2] - 2026-10-02
 ### Added
-- Added `xAxisPosition` control in Explore panel supporting `'top'` (Outlook Calendar style) and `'bottom'` (Standard) axis placement.
-- Added automatic grid margin calibration (`gridTop` and `gridBottom`) when X-axis labels are positioned at the top.
+- **Smart Annotations**: Introduced a new toggle `showSmartAnnotations` to highlight the absolute highest (🏆 Max) and lowest (📉 Min) values in the heatmap using ECharts `markPoint`.
 
-### Changed
-- Default `xAxisPosition` set to `'top'` for seamless calendar and schedule visualization.
+### Removed
+- **Manual Styling Clutter**: Removed technical UI controls (`cellBorderWidth`, `cellBorderColor`, `autoContrastText`, `xAxisLabelRotation`) from the control panel.
+- Hardcoded optimal styling (border radius 4px, white borders, automatic text contrast) to ensure the chart looks great by default without user configuration.
 
-## [0.2.0] - 2026-09-21
-
+## [0.2.1] - 2026-09-01
 ### Added
-- Smart chronological sorting for week days and hourly slots.
-- Marginal row and column totals with dynamic aggregation.
-- Auto-contrast text calculation using WCAG relative luminance.
-- Interactive cross-filtering support via Superset `setDataMask`.
+- Initial release for the Stratum Heatmap plugin.

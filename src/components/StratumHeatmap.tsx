@@ -17,16 +17,14 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
     showLegend = true,
     legendPosition = 'bottom',
     xAxisPosition = 'top',
-    xAxisLabelRotation = 0,
     colorRange,
     showValues,
     valueFontSize = 11,
     showZeroValues = false,
     zeroCellNeutral = true,
     showPercentages,
+    showSmartAnnotations = true,
     cellRadius,
-    cellBorderWidth,
-    cellBorderColor,
     xAxisDimension,
     yAxisDimension,
     activeCell,
@@ -97,8 +95,8 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
         value: coords,
         itemStyle: {
           borderRadius: cellRadius,
-          borderColor: customItemStyle.borderColor || cellBorderColor,
-          borderWidth: customItemStyle.borderWidth !== undefined ? customItemStyle.borderWidth : cellBorderWidth,
+          borderColor: customItemStyle.borderColor || '#ffffff',
+          borderWidth: customItemStyle.borderWidth !== undefined ? customItemStyle.borderWidth : 1,
           ...customItemStyle,
         },
       };
@@ -119,7 +117,7 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
         datum.itemStyle = {
           ...datum.itemStyle,
           borderColor: '#0284c7',
-          borderWidth: Math.max(cellBorderWidth + 2, 3),
+          borderWidth: 3,
           shadowBlur: 8,
           shadowColor: 'rgba(2, 132, 199, 0.6)',
         };
@@ -268,7 +266,6 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
           fontSize: 11,
           fontWeight: 600,
           interval: 0,
-          rotate: xAxisLabelRotation,
         },
       },
       yAxis: {
@@ -308,17 +305,33 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
           },
           itemStyle: {
             borderRadius: cellRadius,
-            borderColor: cellBorderColor,
-            borderWidth: cellBorderWidth,
+            borderColor: '#ffffff',
+            borderWidth: 1,
           },
           emphasis: {
             itemStyle: {
               shadowBlur: 10,
               shadowColor: 'rgba(0, 0, 0, 0.35)',
               borderColor: '#0284c7',
-              borderWidth: Math.max(cellBorderWidth + 1, 2),
+              borderWidth: 2,
             },
           },
+          ...(showSmartAnnotations && {
+            markPoint: {
+              symbol: 'pin',
+              symbolSize: 45,
+              label: {
+                color: '#fff',
+                fontSize: 10,
+                fontWeight: 'bold',
+                formatter: (p: any) => (p.name === 'Max' ? '🏆' : '📉'),
+              },
+              data: [
+                { type: 'max', name: 'Max' },
+                { type: 'min', name: 'Min' },
+              ],
+            },
+          }),
         },
       ],
     };
@@ -333,16 +346,14 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
     showLegend,
     legendPosition,
     xAxisPosition,
-    xAxisLabelRotation,
     colorRange,
     showValues,
     valueFontSize,
     showZeroValues,
     zeroCellNeutral,
     showPercentages,
+    showSmartAnnotations,
     cellRadius,
-    cellBorderWidth,
-    cellBorderColor,
     activeCell,
     totalLabel,
   ]);

@@ -173,30 +173,17 @@ const config: ControlPanelConfig = {
             },
           },
           {
-            name: 'cellBorderWidth',
+            name: 'showSmartAnnotations',
             config: {
-              type: 'SliderControl',
-              label: t('Spaziatura / Margine Cella (px)'),
+              type: 'CheckboxControl',
+              label: t('Mostra Smart Annotations (Max/Min)'),
               renderTrigger: true,
-              min: 0,
-              max: 8,
-              step: 1,
-              default: 2,
-              description: t('Spessore della linea di separazione e spaziatura tra celle contigue.'),
+              default: true,
+              description: t('Evidenzia automaticamente le celle col valore assoluto più alto 🏆 e più basso 📉.'),
             },
           },
         ],
         [
-          {
-            name: 'cellBorderColor',
-            config: {
-              type: 'TextControl',
-              label: t('Colore Bordo Separatore Cella'),
-              renderTrigger: true,
-              default: '#ffffff',
-              description: t('Codice colore esadecimale per la griglia di separazione (default #ffffff).'),
-            },
-          },
           {
             name: 'zeroCellNeutral',
             config: {
@@ -254,16 +241,6 @@ const config: ControlPanelConfig = {
               description: t('Se disattivato, le celle con valore 0 rimangono pulite senza numero.'),
             },
           },
-          {
-            name: 'autoContrastText',
-            config: {
-              type: 'CheckboxControl',
-              label: t('Contrasto Automatico Testo WCAG'),
-              renderTrigger: true,
-              default: true,
-              description: t('Inverte automaticamente il colore del testo (bianco su celle scure, scuro su celle chiare).'),
-            },
-          },
         ],
         [
           {
@@ -274,22 +251,6 @@ const config: ControlPanelConfig = {
               renderTrigger: true,
               default: true,
               description: t('Ordina automaticamente giorni (Lunedì-Domenica) e fasce orarie (00:00-23:00).'),
-            },
-          },
-          {
-            name: 'xAxisLabelRotation',
-            config: {
-              type: 'SelectControl',
-              label: t('Rotazione Etichette Asse X'),
-              default: 0,
-              renderTrigger: true,
-              choices: [
-                [0, t('0° (Orizzontale)')],
-                [30, t('30° (Inclinato)')],
-                [45, t('45° (Diagonale)')],
-                [90, t('90° (Verticale)')],
-              ],
-              description: t('Ruota le etichette delle colonne per evitare sovrapposizioni.'),
             },
           },
           {

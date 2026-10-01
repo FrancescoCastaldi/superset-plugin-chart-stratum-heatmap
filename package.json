@@ -1,6 +1,6 @@
 {
   "name": "superset-plugin-chart-stratum-heatmap",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "StratumHeatmap — Interactive ECharts Matrix Grid Chart Plugin for Apache Superset",
   "homepage": "https://github.com/FrancescoCastaldi/superset-plugin-chart-stratum-heatmap",
   "repository": {
