@@ -153,7 +153,11 @@ Write-Color ""
 # -------------------------------------------------------------
 # 3. Build Plugin (TypeScript compilation)
 # -------------------------------------------------------------
-if (-not $SkipBuild) {
+$DistDir = Join-Path $ResolvedPluginPath "dist"
+if (Test-Path $DistDir) {
+    Write-Color "`n=== FASE 1: Bundle Pre-compilato 'dist' Rilevato ===" "Cyan"
+    Write-Color "[OK] File compilati gia' pronti in dist/. Installazione istantanea senza download dipendenze." "Green"
+} elseif (-not $SkipBuild) {
     Write-Color "=== FASE 1: Compilazione TypeScript del Plugin ===" "Cyan"
     $NpmCmd = Get-Command "npm" -ErrorAction SilentlyContinue
     if ($NpmCmd) {
