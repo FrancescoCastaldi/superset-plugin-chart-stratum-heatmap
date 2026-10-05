@@ -72,7 +72,10 @@ Write-Color ""
 # 1. Resolve Plugin Path
 # -------------------------------------------------------------
 if (-not $PluginPath) {
-    if (Test-Path (Join-Path $PSScriptRoot "src\index.ts")) {
+    $CurrentDir = (Get-Location).Path
+    if (Test-Path (Join-Path $CurrentDir "package.json")) {
+        $PluginPath = $CurrentDir
+    } elseif (Test-Path (Join-Path $PSScriptRoot "src\index.ts")) {
         $PluginPath = $PSScriptRoot
     } elseif (Test-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "src\index.ts")) {
         $PluginPath = Split-Path -Parent $PSScriptRoot
@@ -86,7 +89,7 @@ if (-not (Test-Path (Join-Path $ResolvedPluginPath "package.json"))) {
     Write-Color "[ERRORE] Impossibile trovare package.json del plugin in '$ResolvedPluginPath'!" "Red"
     exit 1
 }
-Write-Color "[INFO] Cartella Plugin: $ResolvedPluginPath" "Gray"
+Write-Color "[INFO] Cartella Plugin (sorgente): $ResolvedPluginPath" "Green"
 
 # -------------------------------------------------------------
 # 2. Resolve Superset Path
@@ -96,6 +99,8 @@ $DefaultRemoteCandidate = "C:\Users\admmaps\superset_6_1_0\superset"
 if (-not $SupersetPath) {
     $Candidates = @(
         $DefaultRemoteCandidate,
+        "C:\Superset",
+        "D:\Sviluppo\superset-6.1.0",
         "D:\Sviluppo\superset",
         (Join-Path $ResolvedPluginPath "..\superset"),
         (Join-Path $ResolvedPluginPath "..\apache-superset"),
