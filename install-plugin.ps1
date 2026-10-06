@@ -482,29 +482,3 @@ Write-Color "  2. FONDAMENTALE: Esegui un Hard Refresh premendo CTRL + F5 (o apr
 Write-Color "     per forzare lo svuotamento della cache del browser e caricare i nuovi bundle." "Cyan"
 Write-Color "  3. Crea un nuovo grafico ('Create Chart') e cerca 'Stratum Heatmap' nella galleria!" "White"
 Write-Color ""
-Write-Color "COMANDI MANUALI DOCKER (qualora necessari):" "Yellow"
-Write-Color "  cd '$ResolvedSupersetPath'" "Cyan"
-Write-Color "  docker compose -f docker-compose-non-dev.yml up -d --build superset" "Green"
-Write-Color "  oppure:" "White"
-Write-Color "  docker compose restart superset-node" "Green"
-Write-Color ""
-
-if (-not $RestartDocker -and -not $NoDocker -and -not $Force) {
-    $DockerCmd = Get-Command "docker" -ErrorAction SilentlyContinue
-    if ($DockerCmd) {
-        Write-Color "Vuoi eseguire automaticamente il riavvio del container Docker adesso?" "Cyan"
-        Write-Color "  [1] docker compose -f docker-compose-non-dev.yml up -d --build superset" "White"
-        Write-Color "  [2] docker compose restart superset-node" "White"
-        Write-Color "  [3] Nessuna azione (eseguirò manualmente)" "White"
-        $Choice = Read-Host "Scelta [1/2/3, Default: 3]"
-        if ($Choice -eq "1") {
-            Set-Location $ResolvedSupersetPath
-            docker compose -f docker-compose-non-dev.yml up -d --build superset
-        } elseif ($Choice -eq "2") {
-            Set-Location $ResolvedSupersetPath
-            docker compose restart superset-node
-        } else {
-            Write-Color "[INFO] Nessun comando Docker eseguito. Procedi manualmente quando pronto." "Gray"
-        }
-    }
-}
