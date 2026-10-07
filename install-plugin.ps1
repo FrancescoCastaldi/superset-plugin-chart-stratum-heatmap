@@ -8,7 +8,7 @@
     3. Copies plugin files into superset-frontend/plugins/superset-plugin-chart-stratum-heatmap.
     4. Safely parses and updates MainPreset.ts with backup and idempotency:
        - import { StratumHeatmapChartPlugin } from '../../../plugins/superset-plugin-chart-stratum-heatmap/src';
-       - new StratumHeatmapChartPlugin().configure({ key: 'stratum_heatmap' }).register(),
+       - new StratumHeatmapChartPlugin().configure({ key: 'stratum_heatmap' }),
     5. Cleans stale Webpack/Babel cache.
     6. Optionally prompts or restarts Docker containers.
 .PARAMETER SupersetPath
@@ -294,7 +294,7 @@ $RawContent = [System.IO.File]::ReadAllText($PresetFile, [System.Text.Encoding]:
 $NL = if ($RawContent.Contains("`r`n")) { "`r`n" } else { "`n" }
 
 $TargetImport = "import { StratumHeatmapChartPlugin } from '../../../plugins/superset-plugin-chart-stratum-heatmap/src';"
-$TargetRegister = "        new StratumHeatmapChartPlugin().configure({ key: 'stratum_heatmap' }).register(),"
+$TargetRegister = "        new StratumHeatmapChartPlugin().configure({ key: 'stratum_heatmap' }),"
 
 # Verifica se il file e' gia' esattamente configurato e privo di duplicati
 $hasExactImport = $RawContent.Contains($TargetImport)
