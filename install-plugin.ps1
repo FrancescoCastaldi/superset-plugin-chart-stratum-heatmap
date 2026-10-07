@@ -9,6 +9,8 @@
     4. Safely parses and updates MainPreset.ts with backup and idempotency:
        - import { StratumHeatmapChartPlugin } from '../../../plugins/superset-plugin-chart-stratum-heatmap/src';
        - new StratumHeatmapChartPlugin().configure({ key: 'stratum_heatmap' }),
+       Legacy registration variants (`.register()` lines, odd indentation, duplicates)
+       are normalized to the canonical form instead of adding new lines.
     5. Cleans stale Webpack/Babel cache.
     6. Optionally prompts or restarts Docker containers.
 .PARAMETER SupersetPath
@@ -296,9 +298,12 @@ $NL = if ($RawContent.Contains("`r`n")) { "`r`n" } else { "`n" }
 $TargetImport = "import { StratumHeatmapChartPlugin } from '../../../plugins/superset-plugin-chart-stratum-heatmap/src';"
 $TargetRegister = "        new StratumHeatmapChartPlugin().configure({ key: 'stratum_heatmap' }),"
 
-# Verifica se il file e' gia' esattamente configurato e privo di duplicati
-$hasExactImport = $RawContent.Contains($TargetImport)
-$hasExactRegister = $RawContent.Contains("new StratumHeatmapChartPlugin().configure({ key: 'stratum_heatmap' }).register()")
+# Verifica se il file e' gia' configurato NELLA FORMA CANONICA (riga-esatta):
+# le varianti legacy (riga con `.register()`, indentazioni anomale, duplicati)
+# non contano come configurazione valida e vengono normalizzate dal ramo else.
+$PresetLineList = [System.Collections.Generic.List[string]]($RawContent -split "\r?\n")
+$hasExactImport = ($PresetLineList -contains $TargetImport)
+$hasExactRegister = ($PresetLineList -contains $TargetRegister)
 $importCount = ([regex]::Matches($RawContent, "from\s*['`"][^'`"]*superset-plugin-chart-stratum-heatmap")).Count
 $registerCount = ([regex]::Matches($RawContent, "new\s+StratumHeatmap")).Count
 
