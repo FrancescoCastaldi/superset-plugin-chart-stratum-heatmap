@@ -1,8 +1,26 @@
-import React, { useRef, useMemo, useEffect } from 'react';
-import * as echarts from 'echarts';
+import { useRef, useMemo, useEffect } from 'react';
+import * as echarts from 'echarts/core';
+import { HeatmapChart } from 'echarts/charts';
+import {
+  GridComponent,
+  MarkPointComponent,
+  TooltipComponent,
+  VisualMapComponent,
+} from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
 import { StratumHeatmapTransformedProps, HeatmapCellData } from '../types';
 import { buildHeatmapOption } from './buildHeatmapOption';
 import { buildCellFilterClauses } from '../plugin/eventHandlers';
+
+// MarkPointComponent backs the Max/Min smart annotations emitted by buildHeatmapOption.
+echarts.use([
+  HeatmapChart,
+  GridComponent,
+  MarkPointComponent,
+  TooltipComponent,
+  VisualMapComponent,
+  CanvasRenderer,
+]);
 
 export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
   const {

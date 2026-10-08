@@ -2,7 +2,6 @@ import {
   ChartProps,
   QueryFormData,
   DataRecord,
-  BinaryQueryObjectFilterClause,
 } from '@superset-ui/core';
 
 export type VisualMapMode = 'continuous' | 'piecewise';

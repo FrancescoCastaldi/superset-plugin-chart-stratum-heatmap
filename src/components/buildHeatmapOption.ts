@@ -53,7 +53,6 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
     showSmartAnnotations = true,
     cellRadius,
     activeCell,
-    totalLabel = 'Totale',
     xAxisDimension,
     yAxisDimension,
   } = params;
