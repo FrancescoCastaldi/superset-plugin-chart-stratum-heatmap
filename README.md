@@ -12,9 +12,15 @@
 
 ## 📸 Visual Preview
 
-![StratumHeatmap Preview](./src/images/example.png)
+![StratumHeatmap Live Showcase](docs/images/live_dashboard_showcase.png)
 
-*Figure 1: StratumHeatmap interactive matrix displaying weekly booking density with marginal row/column totals, smart chronological sorting, and dynamic contrast text.*
+*Figure 1: StratumHeatmap live rendering on Apache Superset displaying monthly hospital activity density by admission regime with adaptive color scale, rounded cells, and in-cell values.*
+
+### 🔍 Matrix Detail & Continuous Gradient Preview
+
+![StratumHeatmap High Resolution Preview](docs/images/stratum_heatmap_preview.png)
+
+*Figure 2: High-resolution matrix view showing marginal row/column totals, smart chronological sorting, and WCAG 2.1 AA dynamic contrast text inversion.*
 
 ---
 
