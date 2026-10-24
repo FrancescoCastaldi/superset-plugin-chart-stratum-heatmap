@@ -21,12 +21,21 @@ export default function buildQuery(formData: StratumHeatmapFormData): QueryConte
     const selectedColumns = [dimX, dimY].filter(Boolean);
     const resolvedMetrics = metric ? [metric] : ensureIsArray(metrics);
 
-    return [
-      {
-        ...baseQueryObject,
-        columns: selectedColumns,
-        metrics: resolvedMetrics,
-      },
-    ];
+    const dashboardTimeCompare = ensureIsArray(
+      fd.extra_form_data?.time_compare ||
+      baseQueryObject.extra_form_data?.time_compare,
+    ).filter(Boolean);
+
+    const query: any = {
+      ...baseQueryObject,
+      columns: selectedColumns,
+      metrics: resolvedMetrics,
+    };
+
+    if (dashboardTimeCompare.length > 0) {
+      query.time_offsets = dashboardTimeCompare;
+    }
+
+    return [query];
   });
 }
