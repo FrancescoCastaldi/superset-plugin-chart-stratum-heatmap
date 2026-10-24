@@ -546,12 +546,48 @@
           },
           "data": [
             {
-              "type": "max",
-              "name": "Max"
+              "name": "Max",
+              "coord": [
+                1,
+                0
+              ],
+              "value": 40,
+              "meta": {
+                "xValue": "Martedì",
+                "yValue": "08:00",
+                "xIndex": 0,
+                "yIndex": 0,
+                "value": 1,
+                "formattedValue": "1",
+                "rowTotal": 1,
+                "colTotal": 1,
+                "grandTotal": 1,
+                "rowPercentage": 1,
+                "colPercentage": 1,
+                "totalPercentage": 1
+              }
             },
             {
-              "type": "min",
-              "name": "Min"
+              "name": "Min",
+              "coord": [
+                0,
+                0
+              ],
+              "value": 10,
+              "meta": {
+                "xValue": "Lunedì",
+                "yValue": "08:00",
+                "xIndex": 0,
+                "yIndex": 0,
+                "value": 1,
+                "formattedValue": "1",
+                "rowTotal": 1,
+                "colTotal": 1,
+                "grandTotal": 1,
+                "rowPercentage": 1,
+                "colPercentage": 1,
+                "totalPercentage": 1
+              }
             }
           ]
         }

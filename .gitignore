@@ -17,3 +17,6 @@ aggiorna-tutti-i-chart.bat
 metti-tutti-i-chart-privati.bat
 metti-tutti-i-chart-pubblici.bat
 pull-tutti-i-chart.bat
+
+# Deepwork local tracking
+.slim/deepwork/

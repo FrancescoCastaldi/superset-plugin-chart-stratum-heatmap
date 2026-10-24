@@ -53,6 +53,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
     showSmartAnnotations = true,
     cellRadius,
     activeCell,
+    totalLabel = 'Totale',
     xAxisDimension,
     yAxisDimension,
   } = params;
@@ -146,6 +147,54 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
     return datum;
   });
 
+  // Calcolo celle Min e Max reali per Smart Annotations (escludendo i totali di riga, colonna e generale)
+  let maxVal = -Infinity;
+  let minVal = Infinity;
+  let maxCellCoords: [number, number] | null = null;
+  let minCellCoords: [number, number] | null = null;
+  let maxCellMeta: HeatmapCellData | undefined;
+  let minCellMeta: HeatmapCellData | undefined;
+
+  for (const item of matrixData) {
+    const coords: [number, number, number | null, HeatmapCellData] = Array.isArray(item) ? item : item.value;
+    if (!coords) continue;
+    const meta = coords[3];
+    if (meta?.isRowTotal || meta?.isColTotal || meta?.isGrandTotal) continue;
+    if (totalLabel && (meta?.xValue === totalLabel || meta?.yValue === totalLabel)) continue;
+
+    const val = coords[2];
+    if (val === null || val === undefined || isNaN(val)) continue;
+
+    if (val > maxVal) {
+      maxVal = val;
+      maxCellCoords = [coords[0], coords[1]];
+      maxCellMeta = meta;
+    }
+    if (val < minVal) {
+      minVal = val;
+      minCellCoords = [coords[0], coords[1]];
+      minCellMeta = meta;
+    }
+  }
+
+  const smartAnnotationData: any[] = [];
+  if (maxCellCoords !== null) {
+    smartAnnotationData.push({
+      name: 'Max',
+      coord: maxCellCoords,
+      value: maxVal,
+      meta: maxCellMeta,
+    });
+  }
+  if (minCellCoords !== null && (maxCellCoords === null || minCellCoords[0] !== maxCellCoords[0] || minCellCoords[1] !== maxCellCoords[1])) {
+    smartAnnotationData.push({
+      name: 'Min',
+      coord: minCellCoords,
+      value: minVal,
+      meta: minCellMeta,
+    });
+  }
+
   const isTopX = xAxisPosition === 'top';
   const gridBottom = !showLegend ? (isTopX ? 16 : 32) : (legendPosition === 'bottom' ? 65 : (isTopX ? 16 : 32));
   const gridTop = showLegend && legendPosition === 'top' ? 65 : (isTopX ? 42 : 24);
@@ -163,6 +212,26 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
         fontSize: 12,
       },
       formatter: (params: any) => {
+        if (params.componentType === 'markPoint') {
+          const isMax = params.data?.name === 'Max';
+          const badgeTitle = isMax ? '🏆 Valore Massimo' : '📉 Valore Minimo';
+          const meta: HeatmapCellData | undefined = params.data?.meta;
+          const valStr = meta?.formattedValue || formatMetricValue(params.data?.value, 'SMART_NUMBER');
+          const cellTitle = meta ? `${meta.xValue} × ${meta.yValue}` : '';
+          return `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-width: 150px;">
+              <div style="font-weight: 700; font-size: 13px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 4px; color: ${isMax ? '#38bdf8' : '#93c5fd'};">
+                ${badgeTitle}
+              </div>
+              ${cellTitle ? `<div style="font-size: 11px; color: #cbd5e1; margin-bottom: 4px;">${cellTitle}</div>` : ''}
+              <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px;">
+                <span style="color: #94a3b8;">Valore:</span>
+                <span style="font-weight: 700; color: #38bdf8;">${valStr}</span>
+              </div>
+            </div>
+          `;
+        }
+
         const item = params.data?.value || params.data;
         if (!item) return '';
         const meta: HeatmapCellData = item[3];
@@ -336,7 +405,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
             borderWidth: 2,
           },
         },
-        ...(showSmartAnnotations && {
+        ...(showSmartAnnotations && smartAnnotationData.length > 0 && {
           markPoint: {
             symbol: 'pin',
             symbolSize: 45,
@@ -346,10 +415,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
               fontWeight: 'bold',
               formatter: (p: any) => (p.name === 'Max' ? '🏆' : '📉'),
             },
-            data: [
-              { type: 'max', name: 'Max' },
-              { type: 'min', name: 'Min' },
-            ],
+            data: smartAnnotationData,
           },
         }),
       },

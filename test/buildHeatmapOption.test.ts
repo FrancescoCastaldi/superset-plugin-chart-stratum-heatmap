@@ -90,6 +90,53 @@ describe('buildHeatmapOption', () => {
     expect(buildHeatmapOption(baseParams({ showSmartAnnotations: false })).series[0].markPoint).toBeUndefined();
   });
 
+  it('places Min and Max markPoints on exact data cell coordinates, excluding totals', () => {
+    const xCategories = ['A', 'B', 'Totale'];
+    const yCategories = ['X', 'Y', 'Totale'];
+    const matrixData = [
+      // Cell (A, X): val 15
+      { value: [0, 0, 15, meta({ xValue: 'A', yValue: 'X', xIndex: 0, yIndex: 0, value: 15 })] },
+      // Cell (B, X): val 45 (MAX data cell)
+      { value: [1, 0, 45, meta({ xValue: 'B', yValue: 'X', xIndex: 1, yIndex: 0, value: 45 })] },
+      // Row total for X: val 60 (should be excluded)
+      { value: [2, 0, 60, meta({ xValue: 'Totale', yValue: 'X', xIndex: 2, yIndex: 0, value: 60, isRowTotal: true })] },
+      // Cell (A, Y): val 5 (MIN data cell)
+      { value: [0, 1, 5, meta({ xValue: 'A', yValue: 'Y', xIndex: 0, yIndex: 1, value: 5 })] },
+      // Cell (B, Y): val 25
+      { value: [1, 1, 25, meta({ xValue: 'B', yValue: 'Y', xIndex: 1, yIndex: 1, value: 25 })] },
+      // Row total for Y: val 30 (should be excluded)
+      { value: [2, 1, 30, meta({ xValue: 'Totale', yValue: 'Y', xIndex: 2, yIndex: 1, value: 30, isRowTotal: true })] },
+      // Col total for A: val 20 (should be excluded)
+      { value: [0, 2, 20, meta({ xValue: 'A', yValue: 'Totale', xIndex: 0, yIndex: 2, value: 20, isColTotal: true })] },
+      // Col total for B: val 70 (should be excluded)
+      { value: [1, 2, 70, meta({ xValue: 'B', yValue: 'Totale', xIndex: 1, yIndex: 2, value: 70, isColTotal: true })] },
+      // Grand total: val 90 (should be excluded)
+      { value: [2, 2, 90, meta({ xValue: 'Totale', yValue: 'Totale', xIndex: 2, yIndex: 2, value: 90, isGrandTotal: true })] },
+    ];
+
+    const option = buildHeatmapOption(baseParams({
+      xCategories,
+      yCategories,
+      matrixData,
+      totalLabel: 'Totale',
+    }));
+
+    const mp = option.series[0].markPoint;
+    expect(mp).toBeDefined();
+    expect(mp.data).toHaveLength(2);
+
+    const maxBadge = mp.data.find((d: any) => d.name === 'Max');
+    const minBadge = mp.data.find((d: any) => d.name === 'Min');
+
+    expect(maxBadge).toBeDefined();
+    expect(maxBadge.coord).toEqual([1, 0]); // (B, X) has 45
+    expect(maxBadge.value).toBe(45);
+
+    expect(minBadge).toBeDefined();
+    expect(minBadge.coord).toEqual([0, 1]); // (A, Y) has 5
+    expect(minBadge.value).toBe(5);
+  });
+
   it('renders tooltip HTML for ordinary cells and totals', () => {
     const option = buildHeatmapOption(baseParams());
     const formatter = option.tooltip.formatter;
@@ -117,6 +164,22 @@ describe('buildHeatmapOption', () => {
     const grandTotal = formatter({ data: { value: [0, 0, 42, meta({ isGrandTotal: true })] } });
     expect(grandTotal).toContain('Totale Generale');
     expect(grandTotal).toContain('Clicca per azzerare i filtri attivi');
+
+    const markPointMaxTooltip = formatter({
+      componentType: 'markPoint',
+      data: { name: 'Max', value: 45, meta: meta({ xValue: 'B', yValue: 'X', formattedValue: '45' }) },
+    });
+    expect(markPointMaxTooltip).toContain('Valore Massimo');
+    expect(markPointMaxTooltip).toContain('B × X');
+    expect(markPointMaxTooltip).toContain('45');
+
+    const markPointMinTooltip = formatter({
+      componentType: 'markPoint',
+      data: { name: 'Min', value: 5, meta: meta({ xValue: 'A', yValue: 'Y', formattedValue: '5' }) },
+    });
+    expect(markPointMinTooltip).toContain('Valore Minimo');
+    expect(markPointMinTooltip).toContain('A × Y');
+    expect(markPointMinTooltip).toContain('5');
 
     expect(formatter({ data: { value: [0, 0, 42, undefined] } })).toBe('');
     expect(formatter({})).toBe('');

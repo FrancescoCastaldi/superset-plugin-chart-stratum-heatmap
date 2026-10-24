@@ -1,4 +1,6 @@
-jest.mock('@superset-ui/core', () => ({
+import { describe, it, expect, vi } from 'vitest';
+
+vi.mock('@superset-ui/core', () => ({
   buildQueryContext: (formData: any, buildFn: any) => ({
     queries: buildFn({}),
   }),
