@@ -257,5 +257,56 @@ describe('transformProps', () => {
     expect(grandTotalCell.value[3].isGrandTotal).toBe(true);
     expect(grandTotalCell.itemStyle.color).toBe('#e2e8f0');
   });
+
+  it('computes comparison metrics, deltas, delta percent, and zero baseline correctly', () => {
+    const compData = [
+      { GIORNO: 'Lunedì', ORA: '08:00', CONTEGGIO: 50, CONTEGGIO__prev: 40 },
+      { GIORNO: 'Lunedì', ORA: '09:00', CONTEGGIO: 30, CONTEGGIO__prev: 60 },
+      { GIORNO: 'Martedì', ORA: '08:00', CONTEGGIO: 20, CONTEGGIO__prev: 0 },
+    ];
+
+    const props = {
+      ...defaultChartProps,
+      formData: {
+        ...defaultChartProps.formData,
+        heatmap_comparison_mode: 'dual_metric',
+        comparison_metric: 'CONTEGGIO__prev',
+        delta_color_scale: 'bipolar_diverging',
+      },
+      queriesData: [{ data: compData }],
+    } as unknown as ChartProps;
+
+    const transformed = transformProps(props);
+
+    expect(transformed.heatmapComparisonMode).toBe('dual_metric');
+    expect(transformed.comparisonMetric).toBe('CONTEGGIO__prev');
+
+    // Lunedì 08:00: val 50, comp 40 => delta +10, delta% +25%
+    const cellLun08 = (transformed.matrixData as any[]).find(
+      d => d.value[3].xValue === 'Lunedì' && d.value[3].yValue === '08:00',
+    );
+    expect(cellLun08).toBeDefined();
+    expect(cellLun08.value[3].comparisonValue).toBe(40);
+    expect(cellLun08.value[3].delta).toBe(10);
+    expect(cellLun08.value[3].deltaPercent).toBe(25);
+    expect(cellLun08.value[3].isZeroBaseline).toBe(false);
+
+    // Lunedì 09:00: val 30, comp 60 => delta -30, delta% -50%
+    const cellLun09 = (transformed.matrixData as any[]).find(
+      d => d.value[3].xValue === 'Lunedì' && d.value[3].yValue === '09:00',
+    );
+    expect(cellLun09).toBeDefined();
+    expect(cellLun09.value[3].comparisonValue).toBe(60);
+    expect(cellLun09.value[3].delta).toBe(-30);
+    expect(cellLun09.value[3].deltaPercent).toBe(-50);
+
+    // Martedì 08:00: val 20, comp 0 => isZeroBaseline true
+    const cellMar08 = (transformed.matrixData as any[]).find(
+      d => d.value[3].xValue === 'Martedì' && d.value[3].yValue === '08:00',
+    );
+    expect(cellMar08).toBeDefined();
+    expect(cellMar08.value[3].comparisonValue).toBe(0);
+    expect(cellMar08.value[3].isZeroBaseline).toBe(true);
+  });
 });
 

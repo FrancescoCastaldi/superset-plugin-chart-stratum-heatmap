@@ -20,6 +20,9 @@ export default function buildQuery(formData: StratumHeatmapFormData): QueryConte
 
     const selectedColumns = [dimX, dimY].filter(Boolean);
     const resolvedMetrics = metric ? [metric] : ensureIsArray(metrics);
+    if (fd.comparison_metric) {
+      resolvedMetrics.push(fd.comparison_metric);
+    }
 
     const dashboardTimeCompare = ensureIsArray(
       fd.extra_form_data?.time_compare ||

@@ -53,11 +53,11 @@ describe('buildHeatmapOption', () => {
   });
 
   it('computes grid insets from x-axis position and legend placement', () => {
-    expect(buildHeatmapOption(baseParams()).grid).toEqual({ top: 42, right: 28, bottom: 65, left: 60, containLabel: true });
-    expect(buildHeatmapOption(baseParams({ legendPosition: 'right' })).grid).toEqual({ top: 42, right: 80, bottom: 16, left: 60, containLabel: true });
-    expect(buildHeatmapOption(baseParams({ legendPosition: 'top' })).grid).toEqual({ top: 65, right: 28, bottom: 16, left: 60, containLabel: true });
-    expect(buildHeatmapOption(baseParams({ legendPosition: 'top', showLegend: false })).grid).toEqual({ top: 42, right: 28, bottom: 16, left: 60, containLabel: true });
-    expect(buildHeatmapOption(baseParams({ xAxisPosition: 'bottom' })).grid).toEqual({ top: 24, right: 28, bottom: 65, left: 60, containLabel: true });
+    expect(buildHeatmapOption(baseParams()).grid).toEqual({ top: 65, right: 35, bottom: 65, left: 70, containLabel: true });
+    expect(buildHeatmapOption(baseParams({ legendPosition: 'right' })).grid).toEqual({ top: 65, right: 80, bottom: 16, left: 70, containLabel: true });
+    expect(buildHeatmapOption(baseParams({ legendPosition: 'top' })).grid).toEqual({ top: 65, right: 35, bottom: 16, left: 70, containLabel: true });
+    expect(buildHeatmapOption(baseParams({ legendPosition: 'top', showLegend: false })).grid).toEqual({ top: 65, right: 35, bottom: 16, left: 70, containLabel: true });
+    expect(buildHeatmapOption(baseParams({ xAxisPosition: 'bottom' })).grid).toEqual({ top: 24, right: 35, bottom: 65, left: 70, containLabel: true });
   });
 
   it('highlights the active cell with the selection border style', () => {

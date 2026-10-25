@@ -197,8 +197,8 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
 
   const isTopX = xAxisPosition === 'top';
   const gridBottom = !showLegend ? (isTopX ? 16 : 32) : (legendPosition === 'bottom' ? 65 : (isTopX ? 16 : 32));
-  const gridTop = showLegend && legendPosition === 'top' ? 65 : (isTopX ? 42 : 24);
-  const gridRight = showLegend && legendPosition === 'right' ? 80 : 28;
+  const gridTop = showLegend && legendPosition === 'top' ? 65 : (isTopX ? 65 : 24);
+  const gridRight = showLegend && legendPosition === 'right' ? 80 : 35;
 
   return {
     tooltip: {
@@ -300,15 +300,48 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
         }
 
         // Tooltip per cella ordinaria
+        let valueBlock = `
+          <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px;">
+            <span style="color: #94a3b8;">Valore:</span>
+            <span style="font-weight: 700; color: #38bdf8;">${meta.formattedValue}</span>
+          </div>
+        `;
+
+        if (meta.comparisonValue !== undefined && meta.comparisonValue !== null) {
+          const compFormatted = formatMetricValue(meta.comparisonValue, 'SMART_NUMBER');
+          let deltaFormatted = '';
+          if (meta.isZeroBaseline) {
+            deltaFormatted = '<span style="color: #38bdf8; font-weight: 700;">[Nuovo]</span>';
+          } else if (meta.delta !== undefined && meta.delta !== null) {
+            const deltaSign = meta.delta > 0 ? '+' : '';
+            const pctSign = meta.deltaPercent !== null && meta.deltaPercent !== undefined && meta.deltaPercent > 0 ? '+' : '';
+            const pctText = meta.deltaPercent !== null && meta.deltaPercent !== undefined ? ` (${pctSign}${meta.deltaPercent.toFixed(1)}%)` : '';
+            const deltaColor = meta.delta >= 0 ? '#10b981' : '#f87171';
+            deltaFormatted = `<span style="color: ${deltaColor}; font-weight: 700;">${deltaSign}${formatMetricValue(meta.delta, 'SMART_NUMBER')}${pctText}</span>`;
+          }
+
+          valueBlock = `
+            <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px;">
+              <span style="color: #94a3b8;">Valore:</span>
+              <span style="font-weight: 700; color: #38bdf8;">${meta.formattedValue}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px;">
+              <span style="color: #94a3b8;">Confronto:</span>
+              <span style="font-weight: 600; color: #cbd5e1;">${compFormatted}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px;">
+              <span style="color: #94a3b8;">Differenziale:</span>
+              ${deltaFormatted}
+            </div>
+          `;
+        }
+
         return `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
               <div style="font-weight: 700; font-size: 13px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 4px;">
                 ${meta.xValue} × ${meta.yValue}
               </div>
-              <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px;">
-                <span style="color: #94a3b8;">Valore:</span>
-                <span style="font-weight: 700; color: #38bdf8;">${meta.formattedValue}</span>
-              </div>
+              ${valueBlock}
               ${
                 showPercentages
                   ? `
@@ -335,7 +368,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
       top: gridTop,
       right: gridRight,
       bottom: gridBottom,
-      left: 60,
+      left: 70,
       containLabel: true,
     },
     xAxis: {
@@ -355,6 +388,8 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
         fontSize: 11,
         fontWeight: 600,
         interval: 0,
+        rotate: 0,
+        margin: 12,
       },
     },
     yAxis: {
@@ -384,10 +419,25 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
         label: {
           show: showValues,
           formatter: (p: any) => {
-            const val = p.data?.value ? p.data.value[2] : p.data?.[2];
-            if (val === null || val === undefined) return '';
-            if (val === 0) return showZeroValues ? '0' : '';
-            return formatMetricValue(val, 'SMART_NUMBER');
+            const rawVal = p.data?.value ? p.data.value[2] : p.data?.[2];
+            const meta: HeatmapCellData | undefined = p.data?.value ? p.data.value[3] : p.data?.[3];
+            if (rawVal === null || rawVal === undefined) return '';
+
+            if (meta && meta.comparisonValue !== undefined && meta.comparisonValue !== null) {
+              const valStr = formatMetricValue(rawVal, 'SMART_NUMBER');
+              if (meta.isZeroBaseline) {
+                return `${valStr}\n[Nuovo]`;
+              }
+              if (meta.delta !== undefined && meta.delta !== null) {
+                const deltaSign = meta.delta > 0 ? '+' : '';
+                const pctSign = meta.deltaPercent !== null && meta.deltaPercent !== undefined && meta.deltaPercent > 0 ? '+' : '';
+                const pctStr = meta.deltaPercent !== null && meta.deltaPercent !== undefined ? ` (${pctSign}${meta.deltaPercent.toFixed(1)}%)` : '';
+                return `${valStr}\n${deltaSign}${formatMetricValue(meta.delta, 'SMART_NUMBER')}${pctStr}`;
+              }
+            }
+
+            if (rawVal === 0) return showZeroValues ? '0' : '';
+            return formatMetricValue(rawVal, 'SMART_NUMBER');
           },
           fontSize: valueFontSize || 11,
           fontWeight: 600,
@@ -408,7 +458,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
         ...(showSmartAnnotations && smartAnnotationData.length > 0 && {
           markPoint: {
             symbol: 'pin',
-            symbolSize: 45,
+            symbolSize: 30,
             label: {
               color: '#fff',
               fontSize: 10,

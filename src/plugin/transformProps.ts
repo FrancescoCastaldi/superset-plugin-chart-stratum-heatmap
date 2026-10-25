@@ -21,6 +21,9 @@ const COLOR_SCHEMES: Record<string, string[]> = {
   sunsetWarm: ['#fffaf0', '#fbd38d', '#ed8936', '#9c4221'],
 };
 
+const BIPOLAR_DIVERGING_PALETTE = ['#dc2626', '#f87171', '#fecaca', '#f8fafc', '#a7f3d0', '#34d399', '#059669'];
+const POLARITY_INVERTED_PALETTE = ['#059669', '#34d399', '#a7f3d0', '#f8fafc', '#fecaca', '#f87171', '#dc2626'];
+
 export default function transformProps(chartProps: ChartProps): StratumHeatmapTransformedProps {
   const { width, height, formData, queriesData, hooks, filterState } = chartProps;
   const fd = formData as StratumHeatmapFormData;
@@ -56,6 +59,13 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     totalLabel = 'Totale',
     totalAggregation = 'sum',
     totalsBackgroundColor = '#f1f5f9',
+    heatmap_comparison_mode = 'none',
+    comparison_metric,
+    time_1_label,
+    time_2_label,
+    delta_display_type = 'both',
+    delta_color_scale = 'bipolar_diverging',
+    zero_baseline_badge_label = 'Nuovo',
   } = fd;
 
   // Risoluzione metrica
@@ -63,6 +73,32 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     typeof metric === 'string'
       ? metric
       : metric?.label || metric?.column?.column_name || Object.keys(data[0] || {})[2] || 'value';
+
+  // Risoluzione metrica di confronto (Tempo 2)
+  let compMetricName: string | undefined;
+  if (comparison_metric) {
+    compMetricName =
+      typeof comparison_metric === 'string'
+        ? comparison_metric
+        : comparison_metric?.label || comparison_metric?.column?.column_name;
+  }
+  if (!compMetricName && data[0]) {
+    const candidateKeys = Object.keys(data[0]);
+    compMetricName = candidateKeys.find(
+      k =>
+        k === `${metricName}__prev` ||
+        k === `${metricName}___comp` ||
+        k === `${metricName}__comparison` ||
+        k.endsWith('___comp') ||
+        k.endsWith('__prev') ||
+        k.endsWith('__comparison'),
+    );
+  }
+
+  const isComparisonActive = Boolean(
+    (heatmap_comparison_mode && heatmap_comparison_mode !== 'none') ||
+    compMetricName,
+  );
 
   // 1. Estrazione categorie uniche (escludendo eventuale etichetta totale da dati grezzi)
   const rawXCategories = Array.from(
@@ -95,13 +131,15 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     colorRange = colorRange.reverse();
   }
 
-  // 4. Costruzione griglia per calcolo totali
+  // 4. Costruzione griglia per calcolo totali e confronto
   const gridMap = new Map<string, number>();
+  const compGridMap = new Map<string, number>();
   const rowTotals = new Map<string, number>();
   const colTotals = new Map<string, number>();
   let grandTotal = 0;
   let minValue = Infinity;
   let maxValue = -Infinity;
+  let maxAbsDelta = 0;
 
   data.forEach(d => {
     const xVal = String(d[xAxisDimension] ?? '(vuoto)');
@@ -113,6 +151,18 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
 
     const key = `${xVal}___${yVal}`;
     gridMap.set(key, val);
+
+    if (compMetricName && d[compMetricName] !== undefined && d[compMetricName] !== null) {
+      const rawComp = d[compMetricName];
+      const valComp = typeof rawComp === 'number' ? rawComp : Number(rawComp);
+      if (!isNaN(valComp as number)) {
+        compGridMap.set(key, valComp as number);
+        const cellDelta = val - (valComp as number);
+        if (Math.abs(cellDelta) > maxAbsDelta) {
+          maxAbsDelta = Math.abs(cellDelta);
+        }
+      }
+    }
 
     rowTotals.set(yVal, (rowTotals.get(yVal) || 0) + val);
     colTotals.set(xVal, (colTotals.get(xVal) || 0) + val);
@@ -151,6 +201,17 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
       const rTot = rowTotals.get(yVal) || 0;
       const cTot = colTotals.get(xVal) || 0;
 
+      const valComp = compGridMap.has(key) ? (compGridMap.get(key) as number) : null;
+      let delta: number | null = null;
+      let deltaPercent: number | null = null;
+      let isZeroBaseline = false;
+
+      if (valComp !== null) {
+        delta = val - valComp;
+        deltaPercent = valComp !== 0 ? (delta / Math.abs(valComp)) * 100 : null;
+        isZeroBaseline = valComp === 0 && val > 0;
+      }
+
       const cellMeta: HeatmapCellData = {
         xValue: xVal,
         yValue: yVal,
@@ -164,13 +225,28 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
         rowPercentage: rTot > 0 ? (val / rTot) * 100 : 0,
         colPercentage: cTot > 0 ? (val / cTot) * 100 : 0,
         totalPercentage: grandTotal > 0 ? (val / grandTotal) * 100 : 0,
+        comparisonValue: valComp,
+        delta,
+        deltaPercent,
+        isZeroBaseline,
       };
 
-      const normalized = Math.max(0, Math.min(1, (val - minValue) / valRange));
-      const cellBg =
-        val === 0 && zeroCellNeutral
-          ? '#f1f5f9'
-          : interpolateColor(colorRange, normalized);
+      let cellBg: string;
+      if (isComparisonActive && delta !== null && delta_color_scale !== 'sequential_standard') {
+        const divergingPalette =
+          delta_color_scale === 'polarity_inverted'
+            ? POLARITY_INVERTED_PALETTE
+            : BIPOLAR_DIVERGING_PALETTE;
+        const normalizedDelta =
+          maxAbsDelta > 0 ? Math.max(0, Math.min(1, (delta + maxAbsDelta) / (2 * maxAbsDelta))) : 0.5;
+        cellBg = interpolateColor(divergingPalette, normalizedDelta);
+      } else {
+        const normalized = Math.max(0, Math.min(1, (val - minValue) / valRange));
+        cellBg =
+          val === 0 && zeroCellNeutral
+            ? '#f1f5f9'
+            : interpolateColor(colorRange, normalized);
+      }
       const optimalTextColor = getOptimalTextColor(cellBg);
 
       matrixData.push({
@@ -345,6 +421,17 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     showColumnTotals,
     totalLabel,
     totalAggregation,
+    heatmapComparisonMode: heatmap_comparison_mode,
+    comparisonMetric: comparison_metric,
+    time1Label: time_1_label,
+    time2Label: time_2_label,
+    deltaDisplayType: delta_display_type,
+    deltaColorScale: delta_color_scale,
+    zeroBaselineBadgeLabel: zero_baseline_badge_label,
+    deltaMin: -maxAbsDelta,
+    deltaMax: maxAbsDelta,
+    gridMapT1: gridMap,
+    gridMapT2: compGridMap,
     onCellClick,
     filterState: filterState as any,
   };

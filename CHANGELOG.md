@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Native Dashboard `PeriodCompare` filter support**: extracted and forwarded `extra_form_data.time_compare` to `query.time_offsets` in `buildQuery.ts`, enabling native dual-query execution without cartesian product views or SQL row multiplication.
 
 ## [Unreleased]
+
+## [0.2.8] - 2026-10-26
+### Added
+- **Matrice comparativa dual metric**: Supporto per il confronto diretto cella per cella tra due metriche o due orizzonti temporali.
+- **Palette divergente bipolare (Rosso, Neutro, Verde)**: Modalità delta cella con smart annotations per coordinate minime e massime escludendo i totali di riga e colonna.
+
 ### Changed
 - **Build**: `npm run build` now emits only type declarations with `tsc` and bundles the plugin into a single minified ES2020 module (`dist/index.esm.js`, linked source map without embedded sources) through the new `scripts/build.mjs` esbuild driver. React, `@superset-ui/*` and the modular ECharts entry points stay external, gallery images are referenced from `src/images/` instead of being inlined. `dist/` drops from about 125 KB to about 90 KB, and `main`/`module` both point to the bundle.
 - **Tree-shaking**: `StratumHeatmap.tsx` imports ECharts from `echarts/core` and registers only what the chart uses (`HeatmapChart`, grid, tooltip, visualMap, markPoint and the canvas renderer) instead of pulling the full `echarts` package. The package is now flagged `"sideEffects": false`.

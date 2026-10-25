@@ -45,8 +45,108 @@ const config: ControlPanelConfig = {
             },
           },
         ],
+        [
+          {
+            name: 'comparison_metric',
+            config: {
+              ...sharedControls.metric,
+              label: t('Metrica di Confronto (Tempo 2)'),
+              description: t('Metrica per il confronto temporale dual metric (es. accessi_conf, ore_erogate_conf).'),
+            },
+          },
+        ],
         ['adhoc_filters'],
         ['row_limit'],
+      ],
+    },
+    {
+      label: t('Confronto Temporale (Tempo 1 vs Tempo 2)'),
+      expanded: false,
+      controlSetRows: [
+        [
+          {
+            name: 'heatmap_comparison_mode',
+            config: {
+              type: 'SelectControl',
+              label: t('Modalità Confronto Temporale'),
+              default: 'none',
+              choices: [
+                ['none', t('Nessun confronto (Singolo periodo)')],
+                ['dual_metric', t('Metrica Confronto Esplicita (Tempo 1 vs Tempo 2)')],
+                ['time_offsets', t('Time Offsets Nativo Superset (__prev)')],
+                ['period_column', t('Colonna Periodo o Flag Anti-Cartesiano')],
+              ],
+              renderTrigger: true,
+              description: t('Seleziona la modalità di confronto per visualizzare i differenziali di cella e di margine.'),
+            },
+          },
+        ],
+        [
+          {
+            name: 'time_1_label',
+            config: {
+              type: 'TextControl',
+              label: t('Etichetta Tempo 1 (Riferimento)'),
+              default: 'Tempo 1 (Riferimento)',
+              renderTrigger: true,
+              description: t('Nome visualizzato per il periodo di riferimento.'),
+            },
+          },
+          {
+            name: 'time_2_label',
+            config: {
+              type: 'TextControl',
+              label: t('Etichetta Tempo 2 (Confronto)'),
+              default: 'Tempo 2 (Confronto)',
+              renderTrigger: true,
+              description: t('Nome visualizzato per il periodo di confronto.'),
+            },
+          },
+        ],
+        [
+          {
+            name: 'delta_display_type',
+            config: {
+              type: 'SelectControl',
+              label: t('Formato Differenziale Cella'),
+              default: 'both',
+              choices: [
+                ['both', t('Entrambi: Valore + Delta % (es. 120 (+20%))')],
+                ['absolute', t('Solo Delta Assoluto (es. +20)')],
+                ['percentage', t('Solo Delta % (es. +20%)')],
+              ],
+              renderTrigger: true,
+              description: t('Come formattare i valori e i differenziali all\'interno delle celle.'),
+            },
+          },
+          {
+            name: 'delta_color_scale',
+            config: {
+              type: 'SelectControl',
+              label: t('Scala Cromatica Differenziali'),
+              default: 'bipolar_diverging',
+              choices: [
+                ['bipolar_diverging', t('Bipolare Divergente (Rosso / Neutro / Verde)')],
+                ['polarity_inverted', t('Polarità Inversa (Verde calo / Rosso aumento)')],
+                ['sequential_standard', t('Sequenziale Standard')],
+              ],
+              renderTrigger: true,
+              description: t('Mappatura dei colori per la scala divergente centrata su 0.'),
+            },
+          },
+        ],
+        [
+          {
+            name: 'zero_baseline_badge_label',
+            config: {
+              type: 'TextControl',
+              label: t('Etichetta Baseline a Zero'),
+              default: 'Nuovo',
+              renderTrigger: true,
+              description: t('Etichetta visualizzata quando il periodo di confronto era 0 (es. Nuovo).'),
+            },
+          },
+        ],
       ],
     },
     {

@@ -5,11 +5,21 @@ import {
 } from '@superset-ui/core';
 
 export type VisualMapMode = 'continuous' | 'piecewise';
+export type HeatmapComparisonMode = 'none' | 'time_offsets' | 'dual_metric' | 'period_column';
+export type DeltaDisplayType = 'absolute' | 'percentage' | 'both';
+export type DeltaColorScale = 'bipolar_diverging' | 'sequential_standard' | 'polarity_inverted';
 
 export interface StratumHeatmapFormData extends QueryFormData {
   xAxisDimension: string;
   yAxisDimension: string;
   metric: any;
+  heatmap_comparison_mode?: HeatmapComparisonMode;
+  comparison_metric?: any;
+  time_1_label?: string;
+  time_2_label?: string;
+  delta_display_type?: DeltaDisplayType;
+  delta_color_scale?: DeltaColorScale;
+  zero_baseline_badge_label?: string;
   colorScheme?: string;
   linearColorScheme?: string;
   reversePalette?: boolean;
@@ -56,6 +66,10 @@ export interface HeatmapCellData {
   isRowTotal?: boolean;
   isColTotal?: boolean;
   isGrandTotal?: boolean;
+  comparisonValue?: number | null;
+  delta?: number | null;
+  deltaPercent?: number | null;
+  isZeroBaseline?: boolean;
 }
 
 export interface StratumHeatmapChartProps extends ChartProps {
@@ -112,6 +126,17 @@ export interface StratumHeatmapTransformedProps {
   showColumnTotals?: boolean;
   totalLabel?: string;
   totalAggregation?: 'sum' | 'avg';
+  heatmapComparisonMode?: HeatmapComparisonMode;
+  comparisonMetric?: any;
+  time1Label?: string;
+  time2Label?: string;
+  deltaDisplayType?: DeltaDisplayType;
+  deltaColorScale?: DeltaColorScale;
+  zeroBaselineBadgeLabel?: string;
+  deltaMin?: number;
+  deltaMax?: number;
+  gridMapT1?: Map<string, number | null>;
+  gridMapT2?: Map<string, number | null>;
   onCellClick?: (filter: { col: string; op: 'IN'; val: string[] }[]) => void;
   filterState?: {
     x?: string;
