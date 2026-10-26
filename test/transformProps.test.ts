@@ -308,5 +308,30 @@ describe('transformProps', () => {
     expect(cellMar08.value[3].comparisonValue).toBe(0);
     expect(cellMar08.value[3].isZeroBaseline).toBe(true);
   });
+
+  it('ignores comparison data when heatmap_comparison_mode is none', () => {
+    const compData = [
+      { GIORNO: 'Lunedì', ORA: '08:00', CONTEGGIO: 50, CONTEGGIO__prev: 40 },
+    ];
+
+    const props = {
+      ...defaultChartProps,
+      formData: {
+        ...defaultChartProps.formData,
+        heatmap_comparison_mode: 'none',
+        comparison_metric: 'CONTEGGIO__prev',
+      },
+      queriesData: [{ data: compData }],
+    } as unknown as ChartProps;
+
+    const transformed = transformProps(props);
+
+    expect(transformed.heatmapComparisonMode).toBe('none');
+    const cell = (transformed.matrixData as any[])[0];
+    expect(cell.value[3].comparisonValue).toBeNull();
+    expect(cell.value[3].delta).toBeNull();
+    expect(cell.value[3].deltaPercent).toBeNull();
+    expect(cell.value[3].isZeroBaseline).toBe(false);
+  });
 });
 

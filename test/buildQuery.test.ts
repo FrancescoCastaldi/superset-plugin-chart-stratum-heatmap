@@ -42,4 +42,34 @@ describe('StratumHeatmap buildQuery', () => {
     const q = (context as any).queries[0];
     expect(q.time_offsets).toEqual(['1 year ago']);
   });
+
+  it('does not append comparison_metric when heatmap_comparison_mode is none', () => {
+    const formData = {
+      datasource: '1__table',
+      xAxisDimension: 'col_a',
+      yAxisDimension: 'col_b',
+      metric: 'count',
+      heatmap_comparison_mode: 'none',
+      comparison_metric: 'count_conf',
+    } as any as StratumHeatmapFormData;
+
+    const context = buildQuery(formData);
+    const q = (context as any).queries[0];
+    expect(q.metrics).toEqual(['count']);
+  });
+
+  it('appends comparison_metric when heatmap_comparison_mode is dual_metric', () => {
+    const formData = {
+      datasource: '1__table',
+      xAxisDimension: 'col_a',
+      yAxisDimension: 'col_b',
+      metric: 'count',
+      heatmap_comparison_mode: 'dual_metric',
+      comparison_metric: 'count_conf',
+    } as any as StratumHeatmapFormData;
+
+    const context = buildQuery(formData);
+    const q = (context as any).queries[0];
+    expect(q.metrics).toEqual(['count', 'count_conf']);
+  });
 });

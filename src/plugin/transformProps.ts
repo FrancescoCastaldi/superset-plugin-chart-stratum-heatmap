@@ -74,31 +74,32 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
       ? metric
       : metric?.label || metric?.column?.column_name || Object.keys(data[0] || {})[2] || 'value';
 
+  const isComparisonActive = Boolean(
+    heatmap_comparison_mode && heatmap_comparison_mode !== 'none',
+  );
+
   // Risoluzione metrica di confronto (Tempo 2)
   let compMetricName: string | undefined;
-  if (comparison_metric) {
-    compMetricName =
-      typeof comparison_metric === 'string'
-        ? comparison_metric
-        : comparison_metric?.label || comparison_metric?.column?.column_name;
+  if (isComparisonActive) {
+    if (comparison_metric) {
+      compMetricName =
+        typeof comparison_metric === 'string'
+          ? comparison_metric
+          : comparison_metric?.label || comparison_metric?.column?.column_name;
+    }
+    if (!compMetricName && data[0]) {
+      const candidateKeys = Object.keys(data[0]);
+      compMetricName = candidateKeys.find(
+        k =>
+          k === `${metricName}__prev` ||
+          k === `${metricName}___comp` ||
+          k === `${metricName}__comparison` ||
+          k.endsWith('___comp') ||
+          k.endsWith('__prev') ||
+          k.endsWith('__comparison'),
+      );
+    }
   }
-  if (!compMetricName && data[0]) {
-    const candidateKeys = Object.keys(data[0]);
-    compMetricName = candidateKeys.find(
-      k =>
-        k === `${metricName}__prev` ||
-        k === `${metricName}___comp` ||
-        k === `${metricName}__comparison` ||
-        k.endsWith('___comp') ||
-        k.endsWith('__prev') ||
-        k.endsWith('__comparison'),
-    );
-  }
-
-  const isComparisonActive = Boolean(
-    (heatmap_comparison_mode && heatmap_comparison_mode !== 'none') ||
-    compMetricName,
-  );
 
   // 1. Estrazione categorie uniche (escludendo eventuale etichetta totale da dati grezzi)
   const rawXCategories = Array.from(

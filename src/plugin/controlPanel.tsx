@@ -45,16 +45,6 @@ const config: ControlPanelConfig = {
             },
           },
         ],
-        [
-          {
-            name: 'comparison_metric',
-            config: {
-              ...sharedControls.metric,
-              label: t('Metrica di Confronto (Tempo 2)'),
-              description: t('Metrica per il confronto temporale dual metric (es. accessi_conf, ore_erogate_conf).'),
-            },
-          },
-        ],
         ['adhoc_filters'],
         ['row_limit'],
       ],
@@ -78,6 +68,20 @@ const config: ControlPanelConfig = {
               ],
               renderTrigger: true,
               description: t('Seleziona la modalità di confronto per visualizzare i differenziali di cella e di margine.'),
+            },
+          },
+        ],
+        [
+          {
+            name: 'comparison_metric',
+            config: {
+              ...sharedControls.metric,
+              label: t('Metrica di Confronto (Tempo 2)'),
+              description: t('Metrica per il confronto temporale dual metric (es. accessi_conf, ore_erogate_conf).'),
+              clearable: true,
+              validators: [],
+              visibility: ({ controls }: { controls: Record<string, any> }) =>
+                Boolean(controls?.heatmap_comparison_mode?.value === 'dual_metric'),
             },
           },
         ],

@@ -20,7 +20,7 @@ export default function buildQuery(formData: StratumHeatmapFormData): QueryConte
 
     const selectedColumns = [dimX, dimY].filter(Boolean);
     const resolvedMetrics = metric ? [metric] : ensureIsArray(metrics);
-    if (fd.comparison_metric) {
+    if (fd.heatmap_comparison_mode === 'dual_metric' && fd.comparison_metric) {
       resolvedMetrics.push(fd.comparison_metric);
     }
 
