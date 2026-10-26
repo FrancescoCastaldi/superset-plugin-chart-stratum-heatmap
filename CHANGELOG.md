@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.10] - 2026-10-26
+### Fixed
+- **Controlli differenziale**: Mascheramento automatico di tutte le opzioni secondarie del confronto temporale (`time_1_label`, `time_2_label`, `delta_display_type`, `delta_color_scale`, `zero_baseline_badge_label`) in Explore quando la modalita' e' impostata su `none`.
+- **Tooltip dinamico**: `buildHeatmapOption` adotta ora dinamicamente le etichette personalizzate `time1Label` e `time2Label` (invece delle stringhe hardcoded), restituendo un blocco pulito a metrica singola in assenza di confronto.
+
 ## [0.2.9] - 2026-10-26
 ### Fixed
 - **Metrica di confronto facoltativa**: In `controlPanel.tsx`, spostato il controllo `comparison_metric` nella sezione dedicata al Confronto Temporale, reso facoltativo (clearable, senza validazione obbligatoria) e visibile esclusivamente quando la modalita' di confronto e' impostata su `dual_metric`.

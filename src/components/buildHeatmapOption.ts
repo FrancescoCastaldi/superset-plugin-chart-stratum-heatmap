@@ -31,6 +31,8 @@ export interface HeatmapOptionParams {
   totalLabel?: string;
   xAxisDimension: string;
   yAxisDimension: string;
+  time1Label?: string;
+  time2Label?: string;
 }
 
 export function buildHeatmapOption(params: HeatmapOptionParams): any {
@@ -300,9 +302,12 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
         }
 
         // Tooltip per cella ordinaria
+        const labelT1 = time1Label || 'Valore';
+        const labelT2 = time2Label || 'Confronto';
+
         let valueBlock = `
           <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px;">
-            <span style="color: #94a3b8;">Valore:</span>
+            <span style="color: #94a3b8;">${labelT1}:</span>
             <span style="font-weight: 700; color: #38bdf8;">${meta.formattedValue}</span>
           </div>
         `;
@@ -326,7 +331,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
               <span style="font-weight: 700; color: #38bdf8;">${meta.formattedValue}</span>
             </div>
             <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px;">
-              <span style="color: #94a3b8;">Confronto:</span>
+              <span style="color: #94a3b8;">${labelT2}:</span>
               <span style="font-weight: 600; color: #cbd5e1;">${compFormatted}</span>
             </div>
             <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px;">

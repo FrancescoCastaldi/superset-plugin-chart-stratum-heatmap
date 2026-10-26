@@ -49,6 +49,8 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
     activeCell,
     totalLabel = 'Totale',
     onCellClick,
+    time1Label,
+    time2Label,
   } = props;
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -80,6 +82,8 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
         totalLabel,
         xAxisDimension,
         yAxisDimension,
+        time1Label,
+        time2Label,
       }),
     [
       xCategories,

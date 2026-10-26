@@ -94,6 +94,8 @@ const config: ControlPanelConfig = {
               default: 'Tempo 1 (Riferimento)',
               renderTrigger: true,
               description: t('Nome visualizzato per il periodo di riferimento.'),
+              visibility: ({ controls }: { controls: Record<string, any> }) =>
+                Boolean(controls?.heatmap_comparison_mode?.value && controls?.heatmap_comparison_mode?.value !== 'none'),
             },
           },
           {
@@ -104,6 +106,8 @@ const config: ControlPanelConfig = {
               default: 'Tempo 2 (Confronto)',
               renderTrigger: true,
               description: t('Nome visualizzato per il periodo di confronto.'),
+              visibility: ({ controls }: { controls: Record<string, any> }) =>
+                Boolean(controls?.heatmap_comparison_mode?.value && controls?.heatmap_comparison_mode?.value !== 'none'),
             },
           },
         ],
@@ -121,6 +125,8 @@ const config: ControlPanelConfig = {
               ],
               renderTrigger: true,
               description: t('Come formattare i valori e i differenziali all\'interno delle celle.'),
+              visibility: ({ controls }: { controls: Record<string, any> }) =>
+                Boolean(controls?.heatmap_comparison_mode?.value && controls?.heatmap_comparison_mode?.value !== 'none'),
             },
           },
           {
@@ -136,6 +142,8 @@ const config: ControlPanelConfig = {
               ],
               renderTrigger: true,
               description: t('Mappatura dei colori per la scala divergente centrata su 0.'),
+              visibility: ({ controls }: { controls: Record<string, any> }) =>
+                Boolean(controls?.heatmap_comparison_mode?.value && controls?.heatmap_comparison_mode?.value !== 'none'),
             },
           },
         ],
@@ -148,6 +156,8 @@ const config: ControlPanelConfig = {
               default: 'Nuovo',
               renderTrigger: true,
               description: t('Etichetta visualizzata quando il periodo di confronto era 0 (es. Nuovo).'),
+              visibility: ({ controls }: { controls: Record<string, any> }) =>
+                Boolean(controls?.heatmap_comparison_mode?.value && controls?.heatmap_comparison_mode?.value !== 'none'),
             },
           },
         ],
