@@ -49,7 +49,10 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     zeroCellNeutral = true,
     showPercentages = true,
     showSmartAnnotations = true,
-    smartAnnotationStyle = 'pin',
+    smartAnnotationStyle: rawAnnotationStyle = 'pin',
+    showAnnotationLegend = false,
+    smartAnnotationThreshold: rawThreshold,
+    comparisonHighlight = false,
     cellRadius = 4,
     emitFilter = true,
     smartSort = true,
@@ -68,6 +71,15 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     delta_color_scale = 'bipolar_diverging',
     zero_baseline_badge_label = 'Nuovo',
   } = fd;
+
+  // 'legend' is the style value of 0.3.0: no mark on the cells, legend on.
+  const smartAnnotationStyle = rawAnnotationStyle === 'legend' ? 'none' : rawAnnotationStyle;
+  const annotationLegend = Boolean(showAnnotationLegend) || rawAnnotationStyle === 'legend';
+  const thresholdNumber =
+    rawThreshold === undefined || rawThreshold === null || String(rawThreshold).trim() === ''
+      ? NaN
+      : Number(rawThreshold);
+  const smartAnnotationThreshold = Number.isFinite(thresholdNumber) ? thresholdNumber : undefined;
 
   // Risoluzione metrica
   const metricName =
@@ -261,7 +273,10 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
         label: {
           color: optimalTextColor,
           fontSize: valueFontSize,
-          show: showValues && (val > 0 || showZeroValues),
+          // A zero cell that had a value in the comparison period still tells a story: keep its label.
+          show:
+            showValues &&
+            (val > 0 || showZeroValues || (comparisonHighlight && valComp !== null && valComp !== 0)),
         },
       });
     });
@@ -415,6 +430,9 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     showPercentages,
     showSmartAnnotations,
     smartAnnotationStyle,
+    showAnnotationLegend: annotationLegend,
+    smartAnnotationThreshold,
+    comparisonHighlight: Boolean(comparisonHighlight),
     cellRadius,
     emitFilter,
     xAxisDimension,

@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-10-29
+
+### Added
+- **Legenda 🏆 / 📉 come flag a parte** (`showAnnotationLegend`): si può usare insieme ai segni sulle celle (spilla o badge) oppure da sola. Il selettore "Posizione di 🏆 e 📉" ora ha `pin`, `cell_badge` e `none` (nessun segno sulle celle); il valore `legend` della 0.3.0 resta letto come "nessun segno + legenda", quindi i grafici già salvati non cambiano.
+- **Valore minimo per 🏆 e 📉** (`smartAnnotationThreshold`, facoltativo): le celle sotto la soglia non ricevono né segni né legenda. Vuoto = tutte le celle, come prima; con 1 si ignorano le celle vuote o a zero.
+- **Confronto riferimento / confronto evidenziato** (`comparisonHighlight`, spento di default): ogni cella mostra il valore e una pillola con freccia e variazione (▲ +150 (+9.1%), ▼ -85, = 0, oppure l'etichetta delle celle nuove); la legenda diventa la scala delle variazioni, con i valori estremi, al posto della scala dei valori che non corrispondeva ai colori; in alto compare l'intestazione con i due periodi (le etichette Tempo 1 e Tempo 2) e il significato delle frecce. La pillola si adatta alla cella: sotto il valore se è alta, accanto se è bassa e larga, solo la freccia se è piccola. Le celle che sono scese a zero mostrano comunque l'etichetta. Con il flag spento, o senza dati di confronto, la vista è quella di sempre.
+
 ## [0.3.0] - 2026-10-29
 
 ### Added

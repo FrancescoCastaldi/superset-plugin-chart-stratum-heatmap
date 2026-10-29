@@ -4,7 +4,9 @@ import {
   DataRecord,
 } from '@superset-ui/core';
 
-export type SmartAnnotationStyle = 'pin' | 'cell_badge' | 'legend';
+// 'legend' is the value of 0.3.0, kept so that saved charts still read: it means no mark on the cells
+// and the legend on.
+export type SmartAnnotationStyle = 'pin' | 'cell_badge' | 'none' | 'legend';
 export type VisualMapMode = 'continuous' | 'piecewise';
 export type HeatmapComparisonMode = 'none' | 'time_offsets' | 'dual_metric' | 'period_column';
 export type DeltaDisplayType = 'absolute' | 'percentage' | 'both';
@@ -38,6 +40,9 @@ export interface StratumHeatmapFormData extends QueryFormData {
   showPercentages?: boolean;
   showSmartAnnotations?: boolean;
   smartAnnotationStyle?: SmartAnnotationStyle;
+  showAnnotationLegend?: boolean;
+  smartAnnotationThreshold?: number | string | null;
+  comparisonHighlight?: boolean;
   cellRadius?: number;
   showRowTotals?: boolean;
   showColumnTotals?: boolean;
@@ -120,6 +125,9 @@ export interface StratumHeatmapTransformedProps {
   showPercentages: boolean;
   showSmartAnnotations: boolean;
   smartAnnotationStyle?: SmartAnnotationStyle;
+  showAnnotationLegend?: boolean;
+  smartAnnotationThreshold?: number;
+  comparisonHighlight?: boolean;
   cellRadius: number;
   emitFilter: boolean;
   xAxisDimension: string;

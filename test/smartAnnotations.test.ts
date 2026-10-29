@@ -191,3 +191,75 @@ describe('smart annotation style', () => {
     }
   });
 });
+
+describe('badge and legend together, and the threshold', () => {
+  it('draws the badges on the cells and the legend beside the scale at the same time', () => {
+    const option = buildHeatmapOption(
+      params({ smartAnnotationStyle: 'cell_badge', showAnnotationLegend: true }),
+    );
+    expect(option.series).toHaveLength(2);
+    expect(option.series[1].type).toBe('custom');
+    expect(option.graphic).toHaveLength(2);
+    expect(option.graphic[0].style.text).toContain('🏆');
+  });
+
+  it('draws the pin and the legend at the same time too', () => {
+    const option = buildHeatmapOption(
+      params({ smartAnnotationStyle: 'pin', showAnnotationLegend: true }),
+    );
+    expect(option.series[0].markPoint.data).toHaveLength(2);
+    expect(option.graphic).toHaveLength(2);
+  });
+
+  it('shows the legend alone with the none style', () => {
+    const option = buildHeatmapOption(
+      params({ smartAnnotationStyle: 'none', showAnnotationLegend: true }),
+    );
+    expect(option.series).toHaveLength(1);
+    expect(option.series[0].markPoint).toBeUndefined();
+    expect(option.graphic).toHaveLength(2);
+  });
+
+  it('shows nothing with the none style and no legend', () => {
+    const option = buildHeatmapOption(params({ smartAnnotationStyle: 'none' }));
+    expect(option.series).toHaveLength(1);
+    expect(option.series[0].markPoint).toBeUndefined();
+    expect(option.graphic).toBeUndefined();
+  });
+
+  const withZero = [
+    ...matrixData,
+    { value: [0, 3, 0, meta({ yValue: 'VUOTA', yIndex: 3, value: 0 })] },
+  ] as any[];
+
+  it('marks an empty cell as the lowest one when there is no threshold', () => {
+    const option = buildHeatmapOption(
+      params({ matrixData: withZero, yCategories: ['A', 'B', 'C', 'VUOTA'] }),
+    );
+    const min = option.series[0].markPoint.data.find((d: any) => d.name === 'Min');
+    expect(min.value).toBe(0);
+  });
+
+  it('skips the cells under the threshold for marks and legend alike', () => {
+    const option = buildHeatmapOption(
+      params({
+        matrixData: withZero,
+        yCategories: ['A', 'B', 'C', 'VUOTA'],
+        smartAnnotationThreshold: 1,
+        showAnnotationLegend: true,
+      }),
+    );
+    const min = option.series[0].markPoint.data.find((d: any) => d.name === 'Min');
+    expect(min.value).toBe(1373);
+    expect(option.graphic[1].style.text).toContain('PRELIEVO VENOSO');
+    expect(option.graphic[1].style.text).not.toContain('VUOTA');
+  });
+
+  it('shows nothing when no cell reaches the threshold', () => {
+    const option = buildHeatmapOption(
+      params({ smartAnnotationThreshold: 99999, showAnnotationLegend: true }),
+    );
+    expect(option.series[0].markPoint).toBeUndefined();
+    expect(option.graphic).toBeUndefined();
+  });
+});

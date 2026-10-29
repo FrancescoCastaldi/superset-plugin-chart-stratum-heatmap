@@ -42,6 +42,37 @@ describe('transformProps', () => {
     ],
   };
 
+  it('reads the legacy legend style as no mark on the cells plus the legend', () => {
+    const read = (formData: Record<string, unknown>) =>
+      transformProps({
+        ...defaultChartProps,
+        formData: { ...defaultChartProps.formData, ...formData },
+      } as unknown as ChartProps);
+
+    expect(read({}).smartAnnotationStyle).toBe('pin');
+    expect(read({}).showAnnotationLegend).toBe(false);
+    const legacy = read({ smartAnnotationStyle: 'legend' });
+    expect(legacy.smartAnnotationStyle).toBe('none');
+    expect(legacy.showAnnotationLegend).toBe(true);
+    const both = read({ smartAnnotationStyle: 'cell_badge', showAnnotationLegend: true });
+    expect(both.smartAnnotationStyle).toBe('cell_badge');
+    expect(both.showAnnotationLegend).toBe(true);
+  });
+
+  it('reads the annotation threshold from a number or a text, and ignores a blank one', () => {
+    const read = (value: unknown) =>
+      transformProps({
+        ...defaultChartProps,
+        formData: { ...defaultChartProps.formData, smartAnnotationThreshold: value },
+      } as unknown as ChartProps).smartAnnotationThreshold;
+
+    expect(read('1')).toBe(1);
+    expect(read(2.5)).toBe(2.5);
+    expect(read('')).toBeUndefined();
+    expect(read(null)).toBeUndefined();
+    expect(read('abc')).toBeUndefined();
+  });
+
   it('correctly extracts and sorts X and Y categories using smartSort', () => {
     const unorderedData = [
       { GIORNO: 'Venerdì', ORA: '14:00', CONTEGGIO: 5 },

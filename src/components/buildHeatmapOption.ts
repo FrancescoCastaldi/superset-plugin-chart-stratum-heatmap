@@ -5,8 +5,15 @@
  * `components/StratumHeatmap.tsx`: riceve le props gia' trasformate e restituisce
  * l'oggetto opzione completo (visualMap, griglia, assi, serie heatmap, tooltip).
  */
-import { HeatmapCellData, HeatmapDatum, VisualMapMode } from '../types';
+import { DeltaColorScale, DeltaDisplayType, HeatmapCellData, HeatmapDatum, VisualMapMode } from '../types';
 import { formatPercentage, formatMetricValue } from '../utils/formatting';
+import {
+  buildComparisonLabel,
+  buildComparisonOverlay,
+  comparisonRich,
+  hasComparisonData,
+  pickComparisonLayout,
+} from './comparisonView';
 import {
   SMART_ANNOTATION_ICON,
   SmartAnnotation,
@@ -35,8 +42,19 @@ export interface HeatmapOptionParams {
   showSmartAnnotations?: boolean;
   /** Where the Max/Min annotations go: pin over the cell (default), badge in the cell, legend. */
   smartAnnotationStyle?: SmartAnnotationStyle;
-  /** Chart width in pixels: the legend style needs it to fit the text beside the scale. */
+  /** Legend with the highest and lowest cell beside the colour scale, on top of any mark. */
+  showAnnotationLegend?: boolean;
+  /** Cells below this value never get a mark nor enter the legend. */
+  smartAnnotationThreshold?: number;
+  /** Highlighted reference vs comparison view: pill under the value, delta scale, period header. */
+  comparisonHighlight?: boolean;
+  deltaDisplayType?: DeltaDisplayType;
+  deltaColorScale?: DeltaColorScale;
+  maxAbsDelta?: number;
+  zeroBaselineBadgeLabel?: string;
+  /** Chart width in pixels: the legend and the delta scale need it to fit beside the scale. */
   width?: number;
+  height?: number;
   cellRadius?: number;
   activeCell?: { x: string; y: string } | null;
   totalLabel?: string;
@@ -65,7 +83,15 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
     showPercentages,
     showSmartAnnotations = true,
     smartAnnotationStyle = 'pin',
+    showAnnotationLegend = false,
+    smartAnnotationThreshold,
+    comparisonHighlight = false,
+    deltaDisplayType,
+    deltaColorScale,
+    maxAbsDelta = 0,
+    zeroBaselineBadgeLabel,
     width = 0,
+    height = 0,
     cellRadius,
     activeCell,
     totalLabel = 'Totale',
@@ -181,6 +207,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
 
     const val = coords[2];
     if (val === null || val === undefined || isNaN(val)) continue;
+    if (smartAnnotationThreshold !== undefined && val < smartAnnotationThreshold) continue;
 
     if (val > maxVal) {
       maxVal = val;
@@ -213,8 +240,11 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
   }
 
   const annotationsOn = showSmartAnnotations && smartAnnotationData.length > 0;
+  // 'legend' is the style value of 0.3.0: no mark on the cells, legend on.
+  const markStyle = smartAnnotationStyle === 'legend' ? 'none' : smartAnnotationStyle;
+  const legendOn = showAnnotationLegend || smartAnnotationStyle === 'legend';
   const legendAnnotations =
-    annotationsOn && smartAnnotationStyle === 'legend'
+    annotationsOn && legendOn
       ? buildLegendAnnotations({
           annotations: smartAnnotationData,
           width,
@@ -226,18 +256,47 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
       : null;
 
   // The badge series carries its own colours: the scale must keep to the heatmap series.
-  if (annotationsOn && smartAnnotationStyle === 'cell_badge') {
+  if (annotationsOn && markStyle === 'cell_badge') {
     visualMapConfig.seriesIndex = 0;
+  }
+
+  // Highlighted comparison: only when the data really carries a comparison.
+  const highlightOn = comparisonHighlight && hasComparisonData(matrixData);
+  const comparisonOverlay = highlightOn
+    ? buildComparisonOverlay({
+        width,
+        showLegend,
+        legendPosition,
+        xAxisPosition,
+        time1Label,
+        time2Label,
+        deltaColorScale,
+        maxAbsDelta,
+      })
+    : null;
+  if (comparisonOverlay?.hideVisualMap) {
+    visualMapConfig.show = false;
   }
 
   const isTopX = xAxisPosition === 'top';
   const gridBottom =
     (!showLegend ? (isTopX ? 16 : 32) : (legendPosition === 'bottom' ? 65 : (isTopX ? 16 : 32))) +
-    (legendAnnotations?.extraBottom ?? 0);
+    (legendAnnotations?.extraBottom ?? 0) +
+    (comparisonOverlay?.extraBottom ?? 0);
   const gridTop =
     (showLegend && legendPosition === 'top' ? 65 : (isTopX ? 65 : 24)) +
-    (legendAnnotations?.extraTop ?? 0);
+    (legendAnnotations?.extraTop ?? 0) +
+    (comparisonOverlay?.extraTop ?? 0);
+  const graphic = [...(comparisonOverlay?.graphic ?? []), ...(legendAnnotations?.graphic ?? [])];
   const gridRight = showLegend && legendPosition === 'right' ? 80 : 35;
+
+  // Size of one cell, to decide how much of the change fits in it (highlighted comparison only).
+  const dataCols = Math.max(1, xCategories.length);
+  const dataRows = Math.max(1, yCategories.length);
+  const comparisonLayout = pickComparisonLayout(
+    width > 0 ? (width - 70 - gridRight) / dataCols : 0,
+    height > 0 ? (height - gridTop - gridBottom) / dataRows : 0,
+  );
 
   return {
     tooltip: {
@@ -453,9 +512,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
       },
     },
     visualMap: visualMapConfig,
-    ...(legendAnnotations && legendAnnotations.graphic.length > 0
-      ? { graphic: legendAnnotations.graphic }
-      : {}),
+    ...(graphic.length > 0 ? { graphic } : {}),
     series: [
       {
         name: 'StratumHeatmap',
@@ -467,6 +524,13 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
             const rawVal = p.data?.value ? p.data.value[2] : p.data?.[2];
             const meta: HeatmapCellData | undefined = p.data?.value ? p.data.value[3] : p.data?.[3];
             if (rawVal === null || rawVal === undefined) return '';
+
+            if (highlightOn && meta && !meta.isRowTotal && !meta.isColTotal && !meta.isGrandTotal) {
+              if (rawVal === 0 && !showZeroValues && (meta.comparisonValue === undefined || meta.comparisonValue === null)) {
+                return '';
+              }
+              return buildComparisonLabel(meta, rawVal, deltaDisplayType, zeroBaselineBadgeLabel, comparisonLayout);
+            }
 
             if (meta && meta.comparisonValue !== undefined && meta.comparisonValue !== null) {
               const valStr = formatMetricValue(rawVal, 'SMART_NUMBER');
@@ -486,6 +550,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
           },
           fontSize: valueFontSize || 11,
           fontWeight: 600,
+          ...(highlightOn ? { rich: comparisonRich(deltaColorScale) } : {}),
         },
         itemStyle: {
           borderRadius: cellRadius,
@@ -500,7 +565,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
             borderWidth: 2,
           },
         },
-        ...(annotationsOn && smartAnnotationStyle === 'pin' && {
+        ...(annotationsOn && markStyle === 'pin' && {
           markPoint: {
             symbol: 'pin',
             symbolSize: 30,
@@ -514,7 +579,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
           },
         }),
       },
-      ...(annotationsOn && smartAnnotationStyle === 'cell_badge'
+      ...(annotationsOn && markStyle === 'cell_badge'
         ? [buildCellBadgeSeries(smartAnnotationData)]
         : []),
     ],

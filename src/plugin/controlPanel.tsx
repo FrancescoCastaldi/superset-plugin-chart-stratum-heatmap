@@ -153,6 +153,22 @@ const config: ControlPanelConfig = {
         ],
         [
           {
+            name: 'comparisonHighlight',
+            config: {
+              type: 'CheckboxControl',
+              label: t('Evidenzia il confronto riferimento / confronto'),
+              renderTrigger: true,
+              default: false,
+              description: t(
+                'Ogni cella mostra il valore e, sotto, una pillola con freccia e variazione; la legenda diventa la scala delle variazioni e in alto compare l\'intestazione con i due periodi. Spento: la vista di sempre.',
+              ),
+              visibility: ({ controls }: { controls: Record<string, any> }) =>
+                Boolean(controls?.heatmap_comparison_mode?.value && controls?.heatmap_comparison_mode?.value !== 'none'),
+            },
+          },
+        ],
+        [
+          {
             name: 'zero_baseline_badge_label',
             config: {
               type: 'TextControl',
@@ -311,10 +327,38 @@ const config: ControlPanelConfig = {
               choices: [
                 ['pin', t('Spilla sopra la cella (classica)')],
                 ['cell_badge', t('Badge nell\'angolo destro della cella')],
-                ['legend', t('Legenda accanto alla scala colori')],
+                ['none', t('Nessun segno sulle celle')],
               ],
               description: t(
-                'Spilla: segno sopra la cella, come prima. Badge: cerchio nell\'angolo destro della cella, dentro i suoi bordi e lontano dal valore. Legenda: nessun segno sulle celle, la scala colori è affiancata da due righe che dicono quale cella ha il valore più alto e quale il più basso.',
+                'Spilla: segno sopra la cella, come prima. Badge: cerchio nell\'angolo destro della cella, dentro i suoi bordi e lontano dal valore. Nessun segno: le celle restano pulite, utile insieme alla legenda.',
+              ),
+              visibility: ({ controls }: { controls: Record<string, any> }) =>
+                controls?.showSmartAnnotations?.value !== false,
+            },
+          },
+          {
+            name: 'showAnnotationLegend',
+            config: {
+              type: 'CheckboxControl',
+              label: t('Legenda 🏆 / 📉 accanto alla scala colori'),
+              renderTrigger: true,
+              default: false,
+              description: t(
+                'Scrive accanto alla scala colori quale cella ha il valore più alto 🏆 e quale il più basso 📉. Si può usare insieme ai segni sulle celle.',
+              ),
+              visibility: ({ controls }: { controls: Record<string, any> }) =>
+                controls?.showSmartAnnotations?.value !== false,
+            },
+          },
+          {
+            name: 'smartAnnotationThreshold',
+            config: {
+              type: 'TextControl',
+              label: t('Valore minimo per 🏆 e 📉 (Opzionale)'),
+              renderTrigger: true,
+              default: null,
+              description: t(
+                'Le celle sotto questo valore non ricevono né segni né legenda. Lascia vuoto per considerarle tutte; metti 1 per ignorare le celle vuote o a zero.',
               ),
               visibility: ({ controls }: { controls: Record<string, any> }) =>
                 controls?.showSmartAnnotations?.value !== false,
