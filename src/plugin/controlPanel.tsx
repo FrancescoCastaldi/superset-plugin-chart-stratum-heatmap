@@ -300,6 +300,26 @@ const config: ControlPanelConfig = {
               description: t('Evidenzia automaticamente le celle col valore assoluto più alto 🏆 e più basso 📉.'),
             },
           },
+          {
+            name: 'smartAnnotationStyle',
+            config: {
+              type: 'SelectControl',
+              label: t('Posizione di 🏆 e 📉'),
+              renderTrigger: true,
+              default: 'pin',
+              clearable: false,
+              choices: [
+                ['pin', t('Spilla sopra la cella (classica)')],
+                ['cell_badge', t('Badge nell\'angolo destro della cella')],
+                ['legend', t('Legenda accanto alla scala colori')],
+              ],
+              description: t(
+                'Spilla: segno sopra la cella, come prima. Badge: cerchio nell\'angolo destro della cella, dentro i suoi bordi e lontano dal valore. Legenda: nessun segno sulle celle, la scala colori è affiancata da due righe che dicono quale cella ha il valore più alto e quale il più basso.',
+              ),
+              visibility: ({ controls }: { controls: Record<string, any> }) =>
+                controls?.showSmartAnnotations?.value !== false,
+            },
+          },
         ],
         [
           {

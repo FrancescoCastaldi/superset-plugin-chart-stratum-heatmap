@@ -1,7 +1,8 @@
 import { useRef, useMemo, useEffect } from 'react';
 import * as echarts from 'echarts/core';
-import { HeatmapChart } from 'echarts/charts';
+import { CustomChart, HeatmapChart } from 'echarts/charts';
 import {
+  GraphicComponent,
   GridComponent,
   MarkPointComponent,
   TooltipComponent,
@@ -12,9 +13,12 @@ import { StratumHeatmapTransformedProps, HeatmapCellData } from '../types';
 import { buildHeatmapOption } from './buildHeatmapOption';
 import { buildCellFilterClauses } from '../plugin/eventHandlers';
 
-// MarkPointComponent backs the Max/Min smart annotations emitted by buildHeatmapOption.
+// MarkPointComponent backs the Max/Min pins, CustomChart the in-cell badges and GraphicComponent
+// the legend text, all emitted by buildHeatmapOption.
 echarts.use([
   HeatmapChart,
+  CustomChart,
+  GraphicComponent,
   GridComponent,
   MarkPointComponent,
   TooltipComponent,
@@ -43,6 +47,7 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
     zeroCellNeutral = true,
     showPercentages,
     showSmartAnnotations = true,
+    smartAnnotationStyle = 'pin',
     cellRadius,
     xAxisDimension,
     yAxisDimension,
@@ -77,6 +82,8 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
         zeroCellNeutral,
         showPercentages,
         showSmartAnnotations,
+        smartAnnotationStyle,
+        width,
         cellRadius,
         activeCell,
         totalLabel,
@@ -103,6 +110,8 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
       zeroCellNeutral,
       showPercentages,
       showSmartAnnotations,
+      smartAnnotationStyle,
+      width,
       cellRadius,
       activeCell,
       totalLabel,

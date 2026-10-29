@@ -7,6 +7,13 @@
  */
 import { HeatmapCellData, HeatmapDatum, VisualMapMode } from '../types';
 import { formatPercentage, formatMetricValue } from '../utils/formatting';
+import {
+  SMART_ANNOTATION_ICON,
+  SmartAnnotation,
+  SmartAnnotationStyle,
+  buildCellBadgeSeries,
+  buildLegendAnnotations,
+} from './smartAnnotations';
 
 export interface HeatmapOptionParams {
   xCategories: string[];
@@ -26,6 +33,10 @@ export interface HeatmapOptionParams {
   zeroCellNeutral?: boolean;
   showPercentages?: boolean;
   showSmartAnnotations?: boolean;
+  /** Where the Max/Min annotations go: pin over the cell (default), badge in the cell, legend. */
+  smartAnnotationStyle?: SmartAnnotationStyle;
+  /** Chart width in pixels: the legend style needs it to fit the text beside the scale. */
+  width?: number;
   cellRadius?: number;
   activeCell?: { x: string; y: string } | null;
   totalLabel?: string;
@@ -53,11 +64,15 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
     showZeroValues = false,
     showPercentages,
     showSmartAnnotations = true,
+    smartAnnotationStyle = 'pin',
+    width = 0,
     cellRadius,
     activeCell,
     totalLabel = 'Totale',
     xAxisDimension,
     yAxisDimension,
+    time1Label,
+    time2Label,
   } = params;
 
   // Configurazione visualMap (Continua vs Piecewise) con fix dimension = 2
@@ -179,7 +194,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
     }
   }
 
-  const smartAnnotationData: any[] = [];
+  const smartAnnotationData: SmartAnnotation[] = [];
   if (maxCellCoords !== null) {
     smartAnnotationData.push({
       name: 'Max',
@@ -197,9 +212,31 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
     });
   }
 
+  const annotationsOn = showSmartAnnotations && smartAnnotationData.length > 0;
+  const legendAnnotations =
+    annotationsOn && smartAnnotationStyle === 'legend'
+      ? buildLegendAnnotations({
+          annotations: smartAnnotationData,
+          width,
+          showLegend,
+          legendPosition,
+          visualMapMode,
+          piecewiseBuckets,
+        })
+      : null;
+
+  // The badge series carries its own colours: the scale must keep to the heatmap series.
+  if (annotationsOn && smartAnnotationStyle === 'cell_badge') {
+    visualMapConfig.seriesIndex = 0;
+  }
+
   const isTopX = xAxisPosition === 'top';
-  const gridBottom = !showLegend ? (isTopX ? 16 : 32) : (legendPosition === 'bottom' ? 65 : (isTopX ? 16 : 32));
-  const gridTop = showLegend && legendPosition === 'top' ? 65 : (isTopX ? 65 : 24);
+  const gridBottom =
+    (!showLegend ? (isTopX ? 16 : 32) : (legendPosition === 'bottom' ? 65 : (isTopX ? 16 : 32))) +
+    (legendAnnotations?.extraBottom ?? 0);
+  const gridTop =
+    (showLegend && legendPosition === 'top' ? 65 : (isTopX ? 65 : 24)) +
+    (legendAnnotations?.extraTop ?? 0);
   const gridRight = showLegend && legendPosition === 'right' ? 80 : 35;
 
   return {
@@ -416,6 +453,9 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
       },
     },
     visualMap: visualMapConfig,
+    ...(legendAnnotations && legendAnnotations.graphic.length > 0
+      ? { graphic: legendAnnotations.graphic }
+      : {}),
     series: [
       {
         name: 'StratumHeatmap',
@@ -460,7 +500,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
             borderWidth: 2,
           },
         },
-        ...(showSmartAnnotations && smartAnnotationData.length > 0 && {
+        ...(annotationsOn && smartAnnotationStyle === 'pin' && {
           markPoint: {
             symbol: 'pin',
             symbolSize: 30,
@@ -468,12 +508,15 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
               color: '#fff',
               fontSize: 10,
               fontWeight: 'bold',
-              formatter: (p: any) => (p.name === 'Max' ? '🏆' : '📉'),
+              formatter: (p: any) => SMART_ANNOTATION_ICON[p.name as SmartAnnotation['name']] ?? '',
             },
             data: smartAnnotationData,
           },
         }),
       },
+      ...(annotationsOn && smartAnnotationStyle === 'cell_badge'
+        ? [buildCellBadgeSeries(smartAnnotationData)]
+        : []),
     ],
   };
 }

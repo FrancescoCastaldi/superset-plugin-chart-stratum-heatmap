@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-10-29
+
+### Added
+- **Posizione di 🏆 e 📉** (`smartAnnotationStyle`): nuovo selettore sotto "Mostra Smart Annotations". `pin` resta il comportamento di sempre; `cell_badge` disegna un badge rotondo nell'angolo destro della cella, dentro i suoi bordi e lontano dal valore centrale, così non copre i numeri e non sconfina nella cella sopra; `legend` toglie i segni dalle celle e scrive accanto alla scala colori due righe sintetiche, per esempio `🏆 Più alto: EMOCROMO · 2026-10 (2.4k)` a sinistra e `📉 Più basso: PRELIEVO VENOSO · 2026-10 (1.4k)` a destra, calcolate dai dati correnti. Con grafici stretti, scala nascosta o a destra le righe passano una sotto l'altra, e i nomi lunghi vengono accorciati.
+
+### Fixed
+- **Tooltip**: `buildHeatmapOption` usava `time1Label` e `time2Label` senza leggerli dai parametri, con errore al passaggio del mouse su una cella ordinaria; ora vengono letti.
+
 ## [0.2.11] - 2026-10-26
 
 ### Changed

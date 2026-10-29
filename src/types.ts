@@ -4,6 +4,7 @@ import {
   DataRecord,
 } from '@superset-ui/core';
 
+export type SmartAnnotationStyle = 'pin' | 'cell_badge' | 'legend';
 export type VisualMapMode = 'continuous' | 'piecewise';
 export type HeatmapComparisonMode = 'none' | 'time_offsets' | 'dual_metric' | 'period_column';
 export type DeltaDisplayType = 'absolute' | 'percentage' | 'both';
@@ -36,6 +37,7 @@ export interface StratumHeatmapFormData extends QueryFormData {
   zeroCellNeutral?: boolean;
   showPercentages?: boolean;
   showSmartAnnotations?: boolean;
+  smartAnnotationStyle?: SmartAnnotationStyle;
   cellRadius?: number;
   showRowTotals?: boolean;
   showColumnTotals?: boolean;
@@ -117,6 +119,7 @@ export interface StratumHeatmapTransformedProps {
   zeroCellNeutral: boolean;
   showPercentages: boolean;
   showSmartAnnotations: boolean;
+  smartAnnotationStyle?: SmartAnnotationStyle;
   cellRadius: number;
   emitFilter: boolean;
   xAxisDimension: string;
