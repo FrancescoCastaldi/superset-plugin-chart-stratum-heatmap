@@ -543,7 +543,7 @@ const config: ControlPanelConfig = {
               label: t('Show row totals column'),
               renderTrigger: true,
               default: true,
-              description: t('Adds a summary column on the right with each row's total.'),
+              description: t('Adds a summary column on the right with each row\'s total.'),
             },
           },
           {
@@ -553,7 +553,7 @@ const config: ControlPanelConfig = {
               label: t('Show column totals row'),
               renderTrigger: true,
               default: true,
-              description: t('Adds a summary row at the bottom with each column's total.'),
+              description: t('Adds a summary row at the bottom with each column\'s total.'),
             },
           },
         ],

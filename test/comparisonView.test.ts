@@ -126,7 +126,7 @@ describe('buildComparisonOverlay', () => {
 
   it('falls back to generic period names', () => {
     const overlay = buildComparisonOverlay({ ...base, time1Label: undefined, time2Label: undefined });
-    expect(overlay.graphic[0].style.text).toContain('Reference  vs  Confronto');
+    expect(overlay.graphic[0].style.text).toContain('Reference  vs  Comparison');
   });
 });
 

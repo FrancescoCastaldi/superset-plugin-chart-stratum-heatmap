@@ -146,7 +146,7 @@ describe('buildHeatmapOption', () => {
     expect(ordinary).toContain('42');
     expect(ordinary).toContain('% of row (08:00)');
     expect(ordinary).toContain('% of column (Lunedì)');
-    expect(ordinary).toContain('% su volume totale');
+    expect(ordinary).toContain('% of total volume');
 
     const noPercentages = buildHeatmapOption(baseParams({ showPercentages: false })).tooltip.formatter({
       data: { value: [0, 0, 42, meta()] },

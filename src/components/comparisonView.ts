@@ -171,7 +171,7 @@ export function buildComparisonOverlay({
   const graphic: any[] = [];
 
   // Header on the edge opposite to the scale.
-  const headerText = `${reference}  vs  ${comparison}      ▲ in aumento   ▼ in calo`;
+  const headerText = `${reference}  vs  ${comparison}      ▲ up   ▼ down`;
   const headerEdge = scaleOnTop ? { bottom: 6 } : { top: 6 };
   graphic.push({
     type: 'text',
