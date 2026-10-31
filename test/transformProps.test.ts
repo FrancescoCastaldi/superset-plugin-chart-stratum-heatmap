@@ -340,6 +340,59 @@ describe('transformProps', () => {
     expect(cellMar08.value[3].isZeroBaseline).toBe(true);
   });
 
+  it('finds the column of a Superset time offset, whatever the offset text is', () => {
+    const offset = '2007-01-01 : 2008-01-01';
+    const compData = [
+      { GIORNO: 'Lunedì', ORA: '08:00', CONTEGGIO: 50, [`CONTEGGIO__${offset}`]: 40 },
+      { GIORNO: 'Lunedì', ORA: '09:00', CONTEGGIO: 30, [`CONTEGGIO__${offset}`]: 60 },
+    ];
+    const transformed = transformProps({
+      ...defaultChartProps,
+      formData: {
+        ...defaultChartProps.formData,
+        heatmap_comparison_mode: 'time_offsets',
+        extra_form_data: { time_range: '2008-01-01 : 2009-01-01', time_compare: [offset] },
+      },
+      queriesData: [{ data: compData }],
+    } as unknown as ChartProps);
+
+    const cell = (transformed.matrixData as any[]).find(
+      d => d.value[3].xValue === 'Lunedì' && d.value[3].yValue === '08:00',
+    );
+    expect(cell.value[3].comparisonValue).toBe(40);
+    expect(cell.value[3].delta).toBe(10);
+    expect(transformed.time1Label).toBe('2008-01-01 : 2009-01-01');
+    expect(transformed.time2Label).toBe(offset);
+  });
+
+  it('reads the comparison options from rawFormData when a dashboard camel-cases formData', () => {
+    const transformed = transformProps({
+      ...defaultChartProps,
+      // what a dashboard delivers: camelCase keys only
+      formData: { ...defaultChartProps.formData, heatmapComparisonMode: 'time_offsets' },
+      rawFormData: { heatmap_comparison_mode: 'time_offsets' },
+      queriesData: [{ data: [{ GIORNO: 'Lunedì', ORA: '08:00', CONTEGGIO: 5, 'CONTEGGIO__1 year ago': 4 }] }],
+    } as unknown as ChartProps);
+    expect(transformed.heatmapComparisonMode).toBe('time_offsets');
+    const cell = (transformed.matrixData as any[])[0];
+    expect(cell.value[3].comparisonValue).toBe(4);
+  });
+
+  it('keeps the labels typed in the control panel over the offset text', () => {
+    const transformed = transformProps({
+      ...defaultChartProps,
+      formData: {
+        ...defaultChartProps.formData,
+        heatmap_comparison_mode: 'time_offsets',
+        time_1_label: 'This year',
+        time_2_label: 'Last year',
+      },
+      queriesData: [{ data: [{ GIORNO: 'Lunedì', ORA: '08:00', CONTEGGIO: 5, 'CONTEGGIO__1 year ago': 4 }] }],
+    } as unknown as ChartProps);
+    expect(transformed.time1Label).toBe('This year');
+    expect(transformed.time2Label).toBe('Last year');
+  });
+
   it('ignores comparison data when heatmap_comparison_mode is none', () => {
     const compData = [
       { GIORNO: 'Lunedì', ORA: '08:00', CONTEGGIO: 50, CONTEGGIO__prev: 40 },

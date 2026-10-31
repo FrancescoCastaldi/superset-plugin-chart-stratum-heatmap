@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-11-01
+
+### Fixed
+- **Comparison on dashboards**: Superset passes `formData` to the chart in camelCase, while the comparison options (`heatmap_comparison_mode`, `comparison_metric`, `time_1_label`, `time_2_label`, ...) were read in snake_case, so in a dashboard the comparison was always off. They are now also read from `rawFormData`.
+- **Time offset column**: with `Native Superset time offsets` the comparison column is named `<metric>__<offset>`, where the offset is a shift (`1 year ago`) or an explicit range sent by a dashboard filter such as the Calendar Filter. It was only found for the suffixes `__prev`, `___comp` and `__comparison`; any `<metric>__<offset>` column is now accepted, and the two periods are named after the reference range and the offset when no label is set.
+- 3 new tests (126 in total).
+
 ## [0.4.0] - 2026-10-29
 
 ### Added

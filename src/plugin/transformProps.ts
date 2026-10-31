@@ -26,7 +26,9 @@ const POLARITY_INVERTED_PALETTE = ['#059669', '#34d399', '#a7f3d0', '#f8fafc', '
 
 export default function transformProps(chartProps: ChartProps): StratumHeatmapTransformedProps {
   const { width, height, formData, queriesData, hooks, filterState } = chartProps;
-  const fd = formData as StratumHeatmapFormData;
+  // On a dashboard Superset hands over `formData` in camelCase while the comparison options of this
+  // chart are read in snake_case: `rawFormData` keeps the names typed in the control panel
+  const fd = { ...((chartProps as any).rawFormData || {}), ...formData } as StratumHeatmapFormData;
   const data = (queriesData[0]?.data || []) as DataRecord[];
 
   const {
@@ -111,8 +113,19 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
           k.endsWith('__prev') ||
           k.endsWith('__comparison'),
       );
+      // Superset names the column of a time offset `<metric>__<offset>`, whatever the offset text
+      // is: a shift (`1 year ago`) or an explicit range sent by a dashboard filter
+      if (!compMetricName) {
+        compMetricName = candidateKeys.find(k => k !== metricName && k.startsWith(`${metricName}__`));
+      }
     }
   }
+  // Without labels typed in the control panel, name the periods after the offset column
+  const offsetText =
+    compMetricName && compMetricName.startsWith(`${metricName}__`)
+      ? compMetricName.slice(metricName.length + 2)
+      : '';
+  const referenceRange: string = (fd as any).extra_form_data?.time_range || '';
 
   // 1. Estrazione categorie uniche (escludendo eventuale etichetta totale da dati grezzi)
   const rawXCategories = Array.from(
@@ -444,8 +457,8 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     totalAggregation,
     heatmapComparisonMode: heatmap_comparison_mode,
     comparisonMetric: comparison_metric,
-    time1Label: time_1_label,
-    time2Label: time_2_label,
+    time1Label: time_1_label || (offsetText ? referenceRange || undefined : undefined),
+    time2Label: time_2_label || (offsetText || undefined),
     deltaDisplayType: delta_display_type,
     deltaColorScale: delta_color_scale,
     zeroBaselineBadgeLabel: zero_baseline_badge_label,
