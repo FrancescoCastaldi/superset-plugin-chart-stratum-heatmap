@@ -8,38 +8,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.0] - 2026-10-29
 
 ### Added
-- **Legenda 🏆 / 📉 come flag a parte** (`showAnnotationLegend`): si può usare insieme ai segni sulle celle (spilla o badge) oppure da sola. Il selettore "Posizione di 🏆 e 📉" ora ha `pin`, `cell_badge` e `none` (nessun segno sulle celle); il valore `legend` della 0.3.0 resta letto come "nessun segno + legenda", quindi i grafici già salvati non cambiano.
-- **Valore minimo per 🏆 e 📉** (`smartAnnotationThreshold`, facoltativo): le celle sotto la soglia non ricevono né segni né legenda. Vuoto = tutte le celle, come prima; con 1 si ignorano le celle vuote o a zero.
-- **Confronto riferimento / confronto evidenziato** (`comparisonHighlight`, spento di default): ogni cella mostra il valore e una pillola con freccia e variazione (▲ +150 (+9.1%), ▼ -85, = 0, oppure l'etichetta delle celle nuove); la legenda diventa la scala delle variazioni, con i valori estremi, al posto della scala dei valori che non corrispondeva ai colori; in alto compare l'intestazione con i due periodi (le etichette Tempo 1 e Tempo 2) e il significato delle frecce. La pillola si adatta alla cella: sotto il valore se è alta, accanto se è bassa e larga, solo la freccia se è piccola. Le celle che sono scese a zero mostrano comunque l'etichetta. Con il flag spento, o senza dati di confronto, la vista è quella di sempre.
+- **Legend 🏆 / 📉 as a separate flag** (`showAnnotationLegend`): it can be used together with the marks on the cells (pin or badge) or on its own. The "Position of 🏆 and 📉" selector now has `pin`, `cell_badge` and `none` (no marks on the cells). The `legend` value from 0.3.0 is still read as "no marks + legend", so charts already saved do not change.
+- **Minimum value for 🏆 and 📉** (`smartAnnotationThreshold`, optional): cells below the threshold receive neither marks nor legend. Empty = all cells, as before; with 1, empty or zero cells are ignored.
+- **Reference comparison / highlighted comparison** (`comparisonHighlight`, off by default): each cell shows the value and a pill with an arrow and the change (▲ +150 (+9.1%), ▼ -85, = 0, or the label of new cells). The legend becomes the scale of changes, with the extreme values, in place of the value scale that did not match the colors. At the top a header appears with the two periods (the labels Time 1 and Time 2) and the meaning of the arrows. The pill adapts to the cell: below the value if it is tall, beside it if it is low and wide, only the arrow if it is small. Cells that dropped to zero still show their label. With the flag off, or without comparison data, the view is the usual one.
 
 ## [0.3.0] - 2026-10-29
 
 ### Added
-- **Posizione di 🏆 e 📉** (`smartAnnotationStyle`): nuovo selettore sotto "Mostra Smart Annotations". `pin` resta il comportamento di sempre; `cell_badge` disegna un badge rotondo nell'angolo destro della cella, dentro i suoi bordi e lontano dal valore centrale, così non copre i numeri e non sconfina nella cella sopra; `legend` toglie i segni dalle celle e scrive accanto alla scala colori due righe sintetiche, per esempio `🏆 Più alto: EMOCROMO · 2026-10 (2.4k)` a sinistra e `📉 Più basso: PRELIEVO VENOSO · 2026-10 (1.4k)` a destra, calcolate dai dati correnti. Con grafici stretti, scala nascosta o a destra le righe passano una sotto l'altra, e i nomi lunghi vengono accorciati.
+- **Position of 🏆 and 📉** (`smartAnnotationStyle`): new selector under "Show Smart Annotations". `pin` keeps the original behavior; `cell_badge` draws a round badge in the top-right corner of the cell, inside its borders and away from the central value, so it does not cover the numbers or spill into the cell above; `legend` removes the marks from the cells and writes two synthetic lines next to the color scale, for example `🏆 Highest: EMOCROMO · 2026-10 (2.4k)` on the left and `📉 Lowest: PRELIEVO VENOSO · 2026-10 (1.4k)` on the right, computed from the current data. With narrow charts, hidden scale or scale on the right the lines stack one below the other, and long names are shortened.
 
 ### Fixed
-- **Tooltip**: `buildHeatmapOption` usava `time1Label` e `time2Label` senza leggerli dai parametri, con errore al passaggio del mouse su una cella ordinaria; ora vengono letti.
+- **Tooltip**: `buildHeatmapOption` used `time1Label` and `time2Label` without reading them from the parameters, causing an error when hovering over an ordinary cell; they are now read.
 
 ## [0.2.11] - 2026-10-26
 
 ### Changed
-- **Controlli Non Bloccanti (Zero Parametri Obbligatori)**: Rimossi tutti i vincoli `validateNonEmpty` e impostato `clearable: true` e `validators: []` per garantire piena flessibilita operativa senza blocchi nell'Explore di Superset.
+- **Non-Blocking Controls (Zero Required Parameters)**: Removed all `validateNonEmpty` constraints and set `clearable: true` and `validators: []` to guarantee full operational flexibility without blocks in the Superset Explore.
 
 ## [0.2.10] - 2026-10-26
 ### Fixed
-- **Controlli differenziale**: Mascheramento automatico di tutte le opzioni secondarie del confronto temporale (`time_1_label`, `time_2_label`, `delta_display_type`, `delta_color_scale`, `zero_baseline_badge_label`) in Explore quando la modalita' e' impostata su `none`.
-- **Tooltip dinamico**: `buildHeatmapOption` adotta ora dinamicamente le etichette personalizzate `time1Label` e `time2Label` (invece delle stringhe hardcoded), restituendo un blocco pulito a metrica singola in assenza di confronto.
+- **Differential controls**: Automatic hiding of all secondary options of the time comparison (`time_1_label`, `time_2_label`, `delta_display_type`, `delta_color_scale`, `zero_baseline_badge_label`) in Explore when the mode is set to `none`.
+- **Dynamic tooltip**: `buildHeatmapOption` now dynamically uses the custom labels `time1Label` and `time2Label` (instead of the hardcoded strings), returning a clean single-metric block when there is no comparison.
 
 ## [0.2.9] - 2026-10-26
 ### Fixed
-- **Metrica di confronto facoltativa**: In `controlPanel.tsx`, spostato il controllo `comparison_metric` nella sezione dedicata al Confronto Temporale, reso facoltativo (clearable, senza validazione obbligatoria) e visibile esclusivamente quando la modalita' di confronto e' impostata su `dual_metric`.
-- **Query Builder**: In `buildQuery.ts`, accodamento di `comparison_metric` limitato rigorosamente alla modalita' `dual_metric`, evitando query a due metriche quando la modalita' e' `none` (singolo periodo).
-- **Transform Props**: In `transformProps.ts`, attivazione di `isComparisonActive` e risoluzione della metrica di confronto vincolate a `heatmap_comparison_mode !== 'none'`, garantendo rendering pulito e visualMap a metrica singola quando il confronto non e' attivo.
+- **Optional comparison metric**: In `controlPanel.tsx`, moved the `comparison_metric` control into the Time Comparison section, made it optional (clearable, without mandatory validation) and visible only when the comparison mode is set to `dual_metric`.
+- **Query Builder**: In `buildQuery.ts`, `comparison_metric` is appended strictly in the `dual_metric` mode only, avoiding two-metric queries when the mode is `none` (single period).
+- **Transform Props**: In `transformProps.ts`, activation of `isComparisonActive` and resolution of the comparison metric are constrained to `heatmap_comparison_mode !== 'none'`, ensuring clean rendering and a single-metric visualMap when the comparison is not active.
 
 ## [0.2.8] - 2026-10-26
 ### Added
-- **Matrice comparativa dual metric**: Supporto per il confronto diretto cella per cella tra due metriche o due orizzonti temporali.
-- **Palette divergente bipolare (Rosso, Neutro, Verde)**: Modalità delta cella con smart annotations per coordinate minime e massime escludendo i totali di riga e colonna.
+- **Dual metric comparison matrix**: Support for direct cell-by-cell comparison between two metrics or two time horizons.
+- **Diverging bipolar palette (Red, Neutral, Green)**: Cell delta mode with smart annotations for minimum and maximum coordinates, excluding row and column totals.
 
 ### Changed
 - **Build**: `npm run build` now emits only type declarations with `tsc` and bundles the plugin into a single minified ES2020 module (`dist/index.esm.js`, linked source map without embedded sources) through the new `scripts/build.mjs` esbuild driver. React, `@superset-ui/*` and the modular ECharts entry points stay external, gallery images are referenced from `src/images/` instead of being inlined. `dist/` drops from about 125 KB to about 90 KB, and `main`/`module` both point to the bundle.
@@ -59,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.3] - 2026-10-07
 ### Fixed
-- **Idempotenza Rigida della Registrazione in `MainPreset.ts`**: La verifica di configurazione esistente in `install-plugin.ps1` e' ora riga-esatta sulla forma canonica `new StratumHeatmapChartPlugin().configure({ key: 'stratum_heatmap' }),`: le varianti legacy con `.register()`, le indentazioni anomale e i duplicati vengono normalizzati alla forma canonica invece di essere considerati gia' configurati.
+- **Rigid idempotence of the registration in `MainPreset.ts`**: The check for existing configuration in `install-plugin.ps1` now matches the canonical form line by line: `new StratumHeatmapChartPlugin().configure({ key: 'stratum_heatmap' }),`. Legacy variants with `.register()`, anomalous indentation and duplicates are normalized to the canonical form instead of being considered already configured.
 
 ## [0.2.2] - 2026-10-02
 ### Added
