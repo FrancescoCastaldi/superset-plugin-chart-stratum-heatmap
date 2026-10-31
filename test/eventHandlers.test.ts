@@ -11,7 +11,7 @@ import {
 const context = {
   xAxisDimension: 'GIORNO',
   yAxisDimension: 'ORA',
-  totalLabel: 'Totale',
+  totalLabel: 'Total',
 };
 
 const ordinaryMeta = { xValue: 'Lunedì', yValue: '08:00' };
@@ -20,19 +20,19 @@ const yClause = (value: string): CrossFilterClause => ({ col: 'ORA', op: 'IN', v
 
 describe('resolveActiveCell', () => {
   it('returns null without a filterState', () => {
-    expect(resolveActiveCell(undefined, 'GIORNO', 'ORA', 'Totale')).toBeNull();
-    expect(resolveActiveCell(null, 'GIORNO', 'ORA', 'Totale')).toBeNull();
-    expect(resolveActiveCell({}, 'GIORNO', 'ORA', 'Totale')).toBeNull();
+    expect(resolveActiveCell(undefined, 'GIORNO', 'ORA', 'Total')).toBeNull();
+    expect(resolveActiveCell(null, 'GIORNO', 'ORA', 'Total')).toBeNull();
+    expect(resolveActiveCell({}, 'GIORNO', 'ORA', 'Total')).toBeNull();
   });
 
   it('prefers an explicit activeCell', () => {
     expect(
-      resolveActiveCell({ activeCell: { x: 'Lunedì', y: '08:00' } }, 'GIORNO', 'ORA', 'Totale'),
+      resolveActiveCell({ activeCell: { x: 'Lunedì', y: '08:00' } }, 'GIORNO', 'ORA', 'Total'),
     ).toEqual({ x: 'Lunedì', y: '08:00' });
   });
 
   it('reads the x/y shorthand', () => {
-    expect(resolveActiveCell({ x: 1, y: 2 }, 'GIORNO', 'ORA', 'Totale')).toEqual({
+    expect(resolveActiveCell({ x: 1, y: 2 }, 'GIORNO', 'ORA', 'Total')).toEqual({
       x: '1',
       y: '2',
     });
@@ -40,28 +40,28 @@ describe('resolveActiveCell', () => {
 
   it('derives a 2D active cell from the filters array', () => {
     expect(
-      resolveActiveCell({ filters: [xClause('Lunedì'), yClause('08:00')] }, 'GIORNO', 'ORA', 'Totale'),
+      resolveActiveCell({ filters: [xClause('Lunedì'), yClause('08:00')] }, 'GIORNO', 'ORA', 'Total'),
     ).toEqual({ x: 'Lunedì', y: '08:00' });
   });
 
   it('derives 1D active cells (row or column total) from the filters array', () => {
-    expect(resolveActiveCell({ filters: [xClause('Lunedì')] }, 'GIORNO', 'ORA', 'Totale')).toEqual({
+    expect(resolveActiveCell({ filters: [xClause('Lunedì')] }, 'GIORNO', 'ORA', 'Total')).toEqual({
       x: 'Lunedì',
-      y: 'Totale',
+      y: 'Total',
     });
-    expect(resolveActiveCell({ filters: [yClause('08:00')] }, 'GIORNO', 'ORA', 'Totale')).toEqual({
-      x: 'Totale',
+    expect(resolveActiveCell({ filters: [yClause('08:00')] }, 'GIORNO', 'ORA', 'Total')).toEqual({
+      x: 'Total',
       y: '08:00',
     });
-    expect(resolveActiveCell({ filters: [{ col: 'ALTRO', op: 'IN', val: ['x'] }] }, 'GIORNO', 'ORA', 'Totale')).toBeNull();
+    expect(resolveActiveCell({ filters: [{ col: 'ALTRO', op: 'IN', val: ['x'] }] }, 'GIORNO', 'ORA', 'Total')).toBeNull();
   });
 
   it('reads a [x, y] value pair', () => {
-    expect(resolveActiveCell({ value: ['Lunedì', '08:00'] }, 'GIORNO', 'ORA', 'Totale')).toEqual({
+    expect(resolveActiveCell({ value: ['Lunedì', '08:00'] }, 'GIORNO', 'ORA', 'Total')).toEqual({
       x: 'Lunedì',
       y: '08:00',
     });
-    expect(resolveActiveCell({ value: ['solo-x'] }, 'GIORNO', 'ORA', 'Totale')).toBeNull();
+    expect(resolveActiveCell({ value: ['solo-x'] }, 'GIORNO', 'ORA', 'Total')).toBeNull();
   });
 });
 
@@ -85,27 +85,27 @@ describe('buildCellFilterClauses', () => {
   });
 
   it('emits a 1D cross-filter for a row total', () => {
-    const rowMeta = { xValue: 'Totale', yValue: '08:00', isRowTotal: true };
+    const rowMeta = { xValue: 'Total', yValue: '08:00', isRowTotal: true };
     expect(buildCellFilterClauses(rowMeta, null, context)).toEqual([yClause('08:00')]);
-    expect(buildCellFilterClauses(rowMeta, { x: 'Totale', y: '08:00' }, context)).toEqual([]);
+    expect(buildCellFilterClauses(rowMeta, { x: 'Total', y: '08:00' }, context)).toEqual([]);
   });
 
   it('emits a 1D cross-filter for a column total', () => {
-    const colMeta = { xValue: 'Lunedì', yValue: 'Totale', isColTotal: true };
+    const colMeta = { xValue: 'Lunedì', yValue: 'Total', isColTotal: true };
     expect(buildCellFilterClauses(colMeta, null, context)).toEqual([xClause('Lunedì')]);
-    expect(buildCellFilterClauses(colMeta, { x: 'Lunedì', y: 'Totale' }, context)).toEqual([]);
+    expect(buildCellFilterClauses(colMeta, { x: 'Lunedì', y: 'Total' }, context)).toEqual([]);
   });
 
   it('resets all filters on the grand total cell', () => {
-    const grandMeta = { xValue: 'Totale', yValue: 'Totale', isGrandTotal: true };
+    const grandMeta = { xValue: 'Total', yValue: 'Total', isGrandTotal: true };
     expect(buildCellFilterClauses(grandMeta, null, context)).toEqual([]);
     expect(buildCellFilterClauses(grandMeta, { x: 'Lunedì', y: '08:00' }, context)).toEqual([]);
   });
 
   it('falls back to the default total label when none is provided', () => {
-    const rowMeta = { xValue: 'Totale', yValue: '08:00', isRowTotal: true };
+    const rowMeta = { xValue: 'Total', yValue: '08:00', isRowTotal: true };
     expect(
-      buildCellFilterClauses(rowMeta, { x: 'Totale', y: '08:00' }, { ...context, totalLabel: '' }),
+      buildCellFilterClauses(rowMeta, { x: 'Total', y: '08:00' }, { ...context, totalLabel: '' }),
     ).toEqual([]);
   });
 });
@@ -132,12 +132,12 @@ describe('computeDataMaskPayload', () => {
       extraFormData: { filters: [xClause('Lunedì')] },
       filterState: {
         value: ['Lunedì'],
-        activeCell: { x: 'Lunedì', y: 'Totale' },
+        activeCell: { x: 'Lunedì', y: 'Total' },
         filters: [xClause('Lunedì')],
       },
     });
     expect(computeDataMaskPayload([yClause('08:00')], null, context).filterState.activeCell).toEqual({
-      x: 'Totale',
+      x: 'Total',
       y: '08:00',
     });
   });
@@ -151,10 +151,10 @@ describe('computeDataMaskPayload', () => {
 
   it('toggles off 1D selections', () => {
     expect(
-      computeDataMaskPayload([xClause('Lunedì')], { x: 'Lunedì', y: 'Totale' }, context),
+      computeDataMaskPayload([xClause('Lunedì')], { x: 'Lunedì', y: 'Total' }, context),
     ).toEqual(buildEmptyDataMaskPayload());
     expect(
-      computeDataMaskPayload([yClause('08:00')], { x: 'Totale', y: '08:00' }, context),
+      computeDataMaskPayload([yClause('08:00')], { x: 'Total', y: '08:00' }, context),
     ).toEqual(buildEmptyDataMaskPayload());
   });
 
@@ -170,7 +170,7 @@ describe('createCellClickHandler', () => {
     emitFilter: true,
     xAxisDimension: 'GIORNO',
     yAxisDimension: 'ORA',
-    totalLabel: 'Totale',
+    totalLabel: 'Total',
     activeCell: { x: 'Lunedì', y: '08:00' },
   };
 

@@ -45,7 +45,7 @@ export interface DataMaskPayload {
   };
 }
 
-/** Payload di reset: azzera filtri, valore e cella attiva. */
+/** Reset payload: clears filters, value and active cell. */
 export function buildEmptyDataMaskPayload(): DataMaskPayload {
   return {
     extraFormData: {
@@ -97,9 +97,9 @@ export function resolveActiveCell(
 /**
  * Traduce il click su una cella della matrice nelle clausole di filtro da emettere.
  *
- * - Gran Totale -> array vuoto (reset di tutti i filtri)
- * - Totale di Riga -> filtro 1D sulla sola dimensione Y (o reset se gia' attivo)
- * - Totale di Colonna -> filtro 1D sulla sola dimensione X (o reset se gia' attivo)
+ * - Gran Total -> array vuoto (reset di tutti i filtri)
+ * - Total di Riga -> filtro 1D sulla sola dimensione Y (o reset se gia' attivo)
+ * - Total di Colonna -> filtro 1D sulla sola dimensione X (o reset se gia' attivo)
  * - Cella ordinaria -> filtro 2D congiunto X+Y (o reset se gia' attiva)
  */
 export function buildCellFilterClauses(
@@ -110,12 +110,12 @@ export function buildCellFilterClauses(
   if (!meta) return [];
 
   const { xAxisDimension, yAxisDimension } = context;
-  const effectiveTotalLabel = context.totalLabel || 'Totale';
+  const effectiveTotalLabel = context.totalLabel || 'Total';
 
-  // Se la cella e' il Gran Totale, resetta tutti i filtri
+  // Se la cella e' il Gran Total, resetta tutti i filtri
   if (meta.isGrandTotal) return [];
 
-  // Se e' Totale di Riga: emette filtro unicamente sulla dimensione Y
+  // Se e' Total di Riga: emette filtro unicamente sulla dimensione Y
   if (meta.isRowTotal) {
     if (
       activeCell &&
@@ -127,7 +127,7 @@ export function buildCellFilterClauses(
     return [{ col: yAxisDimension, op: 'IN', val: [meta.yValue] }];
   }
 
-  // Se e' Totale di Colonna: emette filtro unicamente sulla dimensione X
+  // Se e' Total di Colonna: emette filtro unicamente sulla dimensione X
   if (meta.isColTotal) {
     if (
       activeCell &&

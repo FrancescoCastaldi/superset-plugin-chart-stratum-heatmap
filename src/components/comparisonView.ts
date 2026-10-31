@@ -166,8 +166,8 @@ export function buildComparisonOverlay({
 }: ComparisonOverlayParams): ComparisonOverlay {
   const byDelta = deltaColorScale !== 'sequential_standard';
   const scaleOnTop = showLegend && legendPosition === 'top';
-  const reference = time1Label || 'Riferimento';
-  const comparison = time2Label || 'Confronto';
+  const reference = time1Label || 'Reference';
+  const comparison = time2Label || 'Comparison';
   const graphic: any[] = [];
 
   // Header on the edge opposite to the scale.

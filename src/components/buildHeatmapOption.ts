@@ -94,7 +94,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
     height = 0,
     cellRadius,
     activeCell,
-    totalLabel = 'Totale',
+    totalLabel = 'Total',
     xAxisDimension,
     yAxisDimension,
     time1Label,
@@ -104,7 +104,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
   // Configurazione visualMap (Continua vs Piecewise) con fix dimension = 2
   const visualMapConfig: any = {
     show: showLegend,
-    dimension: 2, // FONDAMENTALE: mappa l'indice 2 (valore) e non l'indice 3 (oggetto meta)
+    dimension: 2, // IMPORTANT: maps index 2 (value), not index 3 (meta object)
     min: minValue,
     max: maxValue,
     calculable: visualMapMode === 'continuous',
@@ -312,7 +312,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
       formatter: (params: any) => {
         if (params.componentType === 'markPoint') {
           const isMax = params.data?.name === 'Max';
-          const badgeTitle = isMax ? '🏆 Valore Massimo' : '📉 Valore Minimo';
+          const badgeTitle = isMax ? '🏆 Maximum value' : '📉 Minimum value';
           const meta: HeatmapCellData | undefined = params.data?.meta;
           const valStr = meta?.formattedValue || formatMetricValue(params.data?.value, 'SMART_NUMBER');
           const cellTitle = meta ? `${meta.xValue} × ${meta.yValue}` : '';
@@ -323,7 +323,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
               </div>
               ${cellTitle ? `<div style="font-size: 11px; color: #cbd5e1; margin-bottom: 4px;">${cellTitle}</div>` : ''}
               <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px;">
-                <span style="color: #94a3b8;">Valore:</span>
+                <span style="color: #94a3b8;">Value:</span>
                 <span style="font-weight: 700; color: #38bdf8;">${valStr}</span>
               </div>
             </div>
@@ -335,15 +335,15 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
         const meta: HeatmapCellData = item[3];
         if (!meta) return '';
 
-        // Tooltip dedicato: Gran Totale
+        // Tooltip dedicato: Gran Total
         if (meta.isGrandTotal) {
           return `
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-width: 170px;">
                 <div style="font-weight: 700; font-size: 13px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 4px; color: #38bdf8;">
-                  ★ Totale Generale
+                  ★ Total Generale
                 </div>
                 <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px;">
-                  <span style="color: #94a3b8;">Valore Aggregato:</span>
+                  <span style="color: #94a3b8;">Value Aggregato:</span>
                   <span style="font-weight: 700; color: #38bdf8;">${meta.formattedValue}</span>
                 </div>
                 <div style="font-size: 10px; color: #94a3b8; margin-top: 6px; border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 4px;">
@@ -353,53 +353,53 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
             `;
         }
 
-        // Tooltip dedicato: Totale di Riga
+        // Tooltip dedicato: Total di Riga
         if (meta.isRowTotal) {
           return `
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-width: 170px;">
                 <div style="font-weight: 700; font-size: 13px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 4px; color: #38bdf8;">
-                  Totale Riga: ${meta.yValue}
+                  Row total: ${meta.yValue}
                 </div>
                 <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px;">
-                  <span style="color: #94a3b8;">Totale:</span>
+                  <span style="color: #94a3b8;">Total:</span>
                   <span style="font-weight: 700; color: #38bdf8;">${meta.formattedValue}</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; gap: 16px; font-size: 11px; color: #cbd5e1; margin-top: 4px; padding-top: 4px; border-top: 1px dashed rgba(255,255,255,0.15);">
-                  <span>% su volume totale:</span>
+                  <span>% of total volume:</span>
                   <span><b>${formatPercentage(meta.totalPercentage)}</b></span>
                 </div>
                 <div style="font-size: 10px; color: #94a3b8; margin-top: 6px;">
-                  Clicca per filtrare su ${yAxisDimension}: "${meta.yValue}"
+                  Click to filter by ${yAxisDimension}: "${meta.yValue}"
                 </div>
               </div>
             `;
         }
 
-        // Tooltip dedicato: Totale di Colonna
+        // Tooltip dedicato: Total di Colonna
         if (meta.isColTotal) {
           return `
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-width: 170px;">
                 <div style="font-weight: 700; font-size: 13px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 4px; color: #38bdf8;">
-                  Totale Colonna: ${meta.xValue}
+                  Column total: ${meta.xValue}
                 </div>
                 <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px;">
-                  <span style="color: #94a3b8;">Totale:</span>
+                  <span style="color: #94a3b8;">Total:</span>
                   <span style="font-weight: 700; color: #38bdf8;">${meta.formattedValue}</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; gap: 16px; font-size: 11px; color: #cbd5e1; margin-top: 4px; padding-top: 4px; border-top: 1px dashed rgba(255,255,255,0.15);">
-                  <span>% su volume totale:</span>
+                  <span>% of total volume:</span>
                   <span><b>${formatPercentage(meta.totalPercentage)}</b></span>
                 </div>
                 <div style="font-size: 10px; color: #94a3b8; margin-top: 6px;">
-                  Clicca per filtrare su ${xAxisDimension}: "${meta.xValue}"
+                  Click to filter by ${xAxisDimension}: "${meta.xValue}"
                 </div>
               </div>
             `;
         }
 
         // Tooltip per cella ordinaria
-        const labelT1 = time1Label || 'Valore';
-        const labelT2 = time2Label || 'Confronto';
+        const labelT1 = time1Label || 'Value';
+        const labelT2 = time2Label || 'Comparison';
 
         let valueBlock = `
           <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px;">
@@ -423,7 +423,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
 
           valueBlock = `
             <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px;">
-              <span style="color: #94a3b8;">Valore:</span>
+              <span style="color: #94a3b8;">Value:</span>
               <span style="font-weight: 700; color: #38bdf8;">${meta.formattedValue}</span>
             </div>
             <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px;">
@@ -447,15 +447,15 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
                 showPercentages
                   ? `
                 <div style="display: flex; justify-content: space-between; gap: 16px; font-size: 11px; color: #cbd5e1; margin-top: 4px; padding-top: 4px; border-top: 1px dashed rgba(255,255,255,0.15);">
-                  <span>% su riga (${meta.yValue}):</span>
+                  <span>% of row (${meta.yValue}):</span>
                   <span><b>${formatPercentage(meta.rowPercentage)}</b></span>
                 </div>
                 <div style="display: flex; justify-content: space-between; gap: 16px; font-size: 11px; color: #cbd5e1;">
-                  <span>% su colonna (${meta.xValue}):</span>
+                  <span>% of column (${meta.xValue}):</span>
                   <span><b>${formatPercentage(meta.colPercentage)}</b></span>
                 </div>
                 <div style="display: flex; justify-content: space-between; gap: 16px; font-size: 11px; color: #cbd5e1;">
-                  <span>% su volume totale:</span>
+                  <span>% of total volume:</span>
                   <span><b>${formatPercentage(meta.totalPercentage)}</b></span>
                 </div>
               `

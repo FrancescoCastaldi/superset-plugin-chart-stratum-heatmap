@@ -59,7 +59,7 @@ export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
     xAxisDimension,
     yAxisDimension,
     activeCell,
-    totalLabel = 'Totale',
+    totalLabel = 'Total',
     onCellClick,
     time1Label,
     time2Label,

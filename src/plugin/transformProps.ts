@@ -60,7 +60,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     yAxisSortAsc = true,
     showRowTotals = true,
     showColumnTotals = true,
-    totalLabel = 'Totale',
+    totalLabel = 'Total',
     totalAggregation = 'sum',
     totalsBackgroundColor = '#f1f5f9',
     heatmap_comparison_mode = 'none',
@@ -116,10 +116,10 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
 
   // 1. Estrazione categorie uniche (escludendo eventuale etichetta totale da dati grezzi)
   const rawXCategories = Array.from(
-    new Set(data.map(d => String(d[xAxisDimension] ?? '(vuoto)'))),
+    new Set(data.map(d => String(d[xAxisDimension] ?? '(empty)'))),
   ).filter(cat => cat !== totalLabel);
   const rawYCategories = Array.from(
-    new Set(data.map(d => String(d[yAxisDimension] ?? '(vuoto)'))),
+    new Set(data.map(d => String(d[yAxisDimension] ?? '(empty)'))),
   ).filter(cat => cat !== totalLabel);
 
   // 2. Ordinamento intelligente o naturale
@@ -130,7 +130,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     ? smartSortCategories(rawYCategories, yAxisSortAsc)
     : rawYCategories;
 
-  // Categorie finali (con colonna/riga Totale in coda se abilitate)
+  // Categorie finali (con colonna/riga Total in coda se abilitate)
   const xCategories = showRowTotals
     ? [...xCategoriesSorted, totalLabel]
     : xCategoriesSorted;
@@ -156,8 +156,8 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
   let maxAbsDelta = 0;
 
   data.forEach(d => {
-    const xVal = String(d[xAxisDimension] ?? '(vuoto)');
-    const yVal = String(d[yAxisDimension] ?? '(vuoto)');
+    const xVal = String(d[xAxisDimension] ?? '(empty)');
+    const yVal = String(d[yAxisDimension] ?? '(empty)');
     if (xVal === totalLabel || yVal === totalLabel) return;
 
     const rawNum = d[metricName];
@@ -360,7 +360,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     });
   }
 
-  // 6.4 Cella Incrocio Totale Generale (Grand Total)
+  // 6.4 Cella Incrocio Total Generale (Grand Total)
   if (showRowTotals && showColumnTotals) {
     const totalXIdx = dataXCount;
     const totalYIdx = dataYCount;

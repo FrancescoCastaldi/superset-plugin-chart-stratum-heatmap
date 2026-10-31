@@ -91,34 +91,34 @@ describe('buildHeatmapOption', () => {
   });
 
   it('places Min and Max markPoints on exact data cell coordinates, excluding totals', () => {
-    const xCategories = ['A', 'B', 'Totale'];
-    const yCategories = ['X', 'Y', 'Totale'];
+    const xCategories = ['A', 'B', 'Total'];
+    const yCategories = ['X', 'Y', 'Total'];
     const matrixData = [
       // Cell (A, X): val 15
       { value: [0, 0, 15, meta({ xValue: 'A', yValue: 'X', xIndex: 0, yIndex: 0, value: 15 })] },
       // Cell (B, X): val 45 (MAX data cell)
       { value: [1, 0, 45, meta({ xValue: 'B', yValue: 'X', xIndex: 1, yIndex: 0, value: 45 })] },
       // Row total for X: val 60 (should be excluded)
-      { value: [2, 0, 60, meta({ xValue: 'Totale', yValue: 'X', xIndex: 2, yIndex: 0, value: 60, isRowTotal: true })] },
+      { value: [2, 0, 60, meta({ xValue: 'Total', yValue: 'X', xIndex: 2, yIndex: 0, value: 60, isRowTotal: true })] },
       // Cell (A, Y): val 5 (MIN data cell)
       { value: [0, 1, 5, meta({ xValue: 'A', yValue: 'Y', xIndex: 0, yIndex: 1, value: 5 })] },
       // Cell (B, Y): val 25
       { value: [1, 1, 25, meta({ xValue: 'B', yValue: 'Y', xIndex: 1, yIndex: 1, value: 25 })] },
       // Row total for Y: val 30 (should be excluded)
-      { value: [2, 1, 30, meta({ xValue: 'Totale', yValue: 'Y', xIndex: 2, yIndex: 1, value: 30, isRowTotal: true })] },
+      { value: [2, 1, 30, meta({ xValue: 'Total', yValue: 'Y', xIndex: 2, yIndex: 1, value: 30, isRowTotal: true })] },
       // Col total for A: val 20 (should be excluded)
-      { value: [0, 2, 20, meta({ xValue: 'A', yValue: 'Totale', xIndex: 0, yIndex: 2, value: 20, isColTotal: true })] },
+      { value: [0, 2, 20, meta({ xValue: 'A', yValue: 'Total', xIndex: 0, yIndex: 2, value: 20, isColTotal: true })] },
       // Col total for B: val 70 (should be excluded)
-      { value: [1, 2, 70, meta({ xValue: 'B', yValue: 'Totale', xIndex: 1, yIndex: 2, value: 70, isColTotal: true })] },
+      { value: [1, 2, 70, meta({ xValue: 'B', yValue: 'Total', xIndex: 1, yIndex: 2, value: 70, isColTotal: true })] },
       // Grand total: val 90 (should be excluded)
-      { value: [2, 2, 90, meta({ xValue: 'Totale', yValue: 'Totale', xIndex: 2, yIndex: 2, value: 90, isGrandTotal: true })] },
+      { value: [2, 2, 90, meta({ xValue: 'Total', yValue: 'Total', xIndex: 2, yIndex: 2, value: 90, isGrandTotal: true })] },
     ];
 
     const option = buildHeatmapOption(baseParams({
       xCategories,
       yCategories,
       matrixData,
-      totalLabel: 'Totale',
+      totalLabel: 'Total',
     }));
 
     const mp = option.series[0].markPoint;
@@ -144,32 +144,32 @@ describe('buildHeatmapOption', () => {
     const ordinary = formatter({ data: { value: [0, 0, 42, meta()] } });
     expect(ordinary).toContain('Lunedì × 08:00');
     expect(ordinary).toContain('42');
-    expect(ordinary).toContain('% su riga (08:00)');
-    expect(ordinary).toContain('% su colonna (Lunedì)');
+    expect(ordinary).toContain('% of row (08:00)');
+    expect(ordinary).toContain('% of column (Lunedì)');
     expect(ordinary).toContain('% su volume totale');
 
     const noPercentages = buildHeatmapOption(baseParams({ showPercentages: false })).tooltip.formatter({
       data: { value: [0, 0, 42, meta()] },
     });
-    expect(noPercentages).not.toContain('% su riga');
+    expect(noPercentages).not.toContain('% of row');
 
     const rowTotal = formatter({ data: { value: [0, 0, 42, meta({ isRowTotal: true })] } });
-    expect(rowTotal).toContain('Totale Riga: 08:00');
-    expect(rowTotal).toContain('Clicca per filtrare su ORA: "08:00"');
+    expect(rowTotal).toContain('Row total: 08:00');
+    expect(rowTotal).toContain('Click to filter by ORA: "08:00"');
 
     const colTotal = formatter({ data: { value: [0, 0, 42, meta({ isColTotal: true })] } });
-    expect(colTotal).toContain('Totale Colonna: Lunedì');
-    expect(colTotal).toContain('Clicca per filtrare su GIORNO: "Lunedì"');
+    expect(colTotal).toContain('Column total: Lunedì');
+    expect(colTotal).toContain('Click to filter by GIORNO: "Lunedì"');
 
     const grandTotal = formatter({ data: { value: [0, 0, 42, meta({ isGrandTotal: true })] } });
-    expect(grandTotal).toContain('Totale Generale');
+    expect(grandTotal).toContain('Total Generale');
     expect(grandTotal).toContain('Clicca per azzerare i filtri attivi');
 
     const markPointMaxTooltip = formatter({
       componentType: 'markPoint',
       data: { name: 'Max', value: 45, meta: meta({ xValue: 'B', yValue: 'X', formattedValue: '45' }) },
     });
-    expect(markPointMaxTooltip).toContain('Valore Massimo');
+    expect(markPointMaxTooltip).toContain('Maximum value');
     expect(markPointMaxTooltip).toContain('B × X');
     expect(markPointMaxTooltip).toContain('45');
 
@@ -177,7 +177,7 @@ describe('buildHeatmapOption', () => {
       componentType: 'markPoint',
       data: { name: 'Min', value: 5, meta: meta({ xValue: 'A', yValue: 'Y', formattedValue: '5' }) },
     });
-    expect(markPointMinTooltip).toContain('Valore Minimo');
+    expect(markPointMinTooltip).toContain('Minimum value');
     expect(markPointMinTooltip).toContain('A × Y');
     expect(markPointMinTooltip).toContain('5');
 

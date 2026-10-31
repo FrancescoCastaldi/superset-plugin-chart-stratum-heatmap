@@ -245,15 +245,15 @@ describe('transformProps', () => {
         ...defaultChartProps.formData,
         showRowTotals: true,
         showColumnTotals: true,
-        totalLabel: 'Totale',
+        totalLabel: 'Total',
       },
     } as unknown as ChartProps;
 
     const transformed = transformProps(props);
 
-    // Categories should have 'Totale' appended
-    expect(transformed.xCategories).toEqual(['Lunedì', 'Martedì', 'Totale']);
-    expect(transformed.yCategories).toEqual(['08:00', '09:00', 'Totale']);
+    // Categories should have 'Total' appended
+    expect(transformed.xCategories).toEqual(['Lunedì', 'Martedì', 'Total']);
+    expect(transformed.yCategories).toEqual(['08:00', '09:00', 'Total']);
 
     // Total elements: 4 data cells + 2 row totals + 2 col totals + 1 grand total = 9 cells
     expect(transformed.matrixData).toHaveLength(9);
@@ -264,7 +264,7 @@ describe('transformProps', () => {
 
     // Check row total cell for 08:00 (10 + 20 = 30)
     const rowTotal08 = (transformed.matrixData as any[]).find(
-      d => d.value[3].xValue === 'Totale' && d.value[3].yValue === '08:00',
+      d => d.value[3].xValue === 'Total' && d.value[3].yValue === '08:00',
     );
     expect(rowTotal08).toBeDefined();
     expect(rowTotal08.value[2]).toBe(30);
@@ -273,7 +273,7 @@ describe('transformProps', () => {
 
     // Check col total cell for Lunedì (10 + 40 = 50)
     const colTotalLun = (transformed.matrixData as any[]).find(
-      d => d.value[3].xValue === 'Lunedì' && d.value[3].yValue === 'Totale',
+      d => d.value[3].xValue === 'Lunedì' && d.value[3].yValue === 'Total',
     );
     expect(colTotalLun).toBeDefined();
     expect(colTotalLun.value[2]).toBe(50);
@@ -281,7 +281,7 @@ describe('transformProps', () => {
 
     // Check grand total cell (100)
     const grandTotalCell = (transformed.matrixData as any[]).find(
-      d => d.value[3].xValue === 'Totale' && d.value[3].yValue === 'Totale',
+      d => d.value[3].xValue === 'Total' && d.value[3].yValue === 'Total',
     );
     expect(grandTotalCell).toBeDefined();
     expect(grandTotalCell.value[2]).toBe(100);

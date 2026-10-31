@@ -117,8 +117,8 @@ describe('smart annotation style', () => {
     expect(option.graphic).toHaveLength(2);
 
     const [max, min] = option.graphic;
-    expect(max.style.text).toBe('🏆 Più alto: EMOCROMO · 2026-10 (2.4k)');
-    expect(min.style.text).toBe('📉 Più basso: PRELIEVO VENOSO · 2026-10 (1.4k)');
+    expect(max.style.text).toBe('🏆 Highest: EMOCROMO · 2026-10 (2.4k)');
+    expect(min.style.text).toBe('📉 Lowest: PRELIEVO VENOSO · 2026-10 (1.4k)');
     // Highest cell on the left of the scale, lowest on its right, both on the scale's row.
     expect(max.right).toBeGreaterThan(1520 / 2);
     expect(min.left).toBeGreaterThan(1520 / 2);

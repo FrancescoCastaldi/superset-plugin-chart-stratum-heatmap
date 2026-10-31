@@ -22,8 +22,8 @@ export const SMART_ANNOTATION_ICON: Record<SmartAnnotation['name'], string> = {
 };
 
 const ANNOTATION_LABEL: Record<SmartAnnotation['name'], string> = {
-  Max: 'Più alto',
-  Min: 'Più basso',
+  Max: 'Highest',
+  Min: 'Lowest',
 };
 
 const BADGE_STROKE: Record<SmartAnnotation['name'], string> = {
@@ -44,7 +44,7 @@ const trim = (text: string, maxWidth: number): string => {
   return text.length <= maxChars ? text : `${text.slice(0, maxChars - 1)}…`;
 };
 
-/** `🏆 Più alto: EMOCROMO · 2026-10 (2.4k)`: what the annotation points at, in words. */
+/** `🏆 Highest: EMOCROMO · 2026-10 (2.4k)`: what the annotation points at, in words. */
 export function describeAnnotation(annotation: SmartAnnotation): string {
   const cell = [annotation.meta?.yValue, annotation.meta?.xValue]
     .filter(part => part !== undefined && part !== null && String(part) !== '')
