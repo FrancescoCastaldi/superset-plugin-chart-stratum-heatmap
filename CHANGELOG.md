@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-11-01
+
+### Added
+- **Periods named after the dashboard filter**: with native time offsets and a dashboard filter such as the Calendar Filter, the two periods take the names and readable ranges the filter sends (`Current period · 1 Jan - 31 Mar 2008`, in the language chosen in the filter, English or Italian) instead of the raw ranges. Labels typed in the control panel win.
+- 5 new tests (131 in total).
+
 ## [0.4.1] - 2026-11-01
 
 ### Fixed

@@ -378,6 +378,23 @@ describe('transformProps', () => {
     expect(cell.value[3].comparisonValue).toBe(4);
   });
 
+  it('names the periods after the calendar names and readable ranges', () => {
+    const transformed = transformProps({
+      ...defaultChartProps,
+      formData: {
+        ...defaultChartProps.formData,
+        heatmap_comparison_mode: 'time_offsets',
+        extra_form_data: {
+          time_range: '2008-01-01 : 2008-04-01',
+          custom_form_data: [{ period_labels: { reference: 'This year', comparison: 'Last year' }, period_text: { reference: '1 Jan - 31 Mar 2008', comparison: '1 Jan - 31 Mar 2007' } }],
+        },
+      },
+      queriesData: [{ data: [{ GIORNO: 'Lunedì', ORA: '08:00', CONTEGGIO: 5, 'CONTEGGIO__2007-01-01 : 2007-04-01': 4 }] }],
+    } as unknown as ChartProps);
+    expect(transformed.time1Label).toBe('This year · 1 Jan - 31 Mar 2008');
+    expect(transformed.time2Label).toBe('Last year · 1 Jan - 31 Mar 2007');
+  });
+
   it('keeps the labels typed in the control panel over the offset text', () => {
     const transformed = transformProps({
       ...defaultChartProps,
