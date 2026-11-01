@@ -66,6 +66,15 @@
 
 ---
 
+## 🔗 Cross-filtering: how to turn it on
+
+1. **In the chart** (Explore, section *Interaction*/*Cross-filtering*): the option **Enable cross-filtering** is on by default. Turn it off to stop the chart from filtering the others.
+2. **On the dashboard**: cross-filtering is enabled by default in Superset 6 (feature flag `DASHBOARD_CROSS_FILTERS`). Open the filter bar and its *Cross-filters* tab to choose which charts a filter reaches.
+3. **Use it**: Click a cell to filter the other charts by both its X and its Y value. The other charts reload and show a filter badge in their header.
+4. **Clear it**: click the same item again, or use *Clear all* in the filter bar.
+
+The other charts must have the filtered column in their dataset: a chart without it ignores the filter.
+
 ## 🏛️ Architecture Overview
 
 ```mermaid

@@ -30,7 +30,7 @@ const config: ControlPanelConfig = {
             config: {
               ...sharedControls.groupby,
               label: t('Y-Axis Dimension (Rows)'),
-              description: t('Dimension for the vertical axis (e.g., Ora o Fascia del Contatto)'),
+              description: t('Dimension for the vertical axis (e.g., hour or time slot)'),
               multi: false,
               clearable: true,
               validators: [],
@@ -124,8 +124,8 @@ const config: ControlPanelConfig = {
               default: 'both',
               choices: [
                 ['both', t('Both: value + delta % (e.g. 120 (+20%))')],
-                ['absolute', t('Solo Delta Assoluto (es. +20)')],
-                ['percentage', t('Solo Delta % (es. +20%)')],
+                ['absolute', t('Absolute delta only (e.g. +20)')],
+                ['percentage', t('Delta % only (e.g. +20%)')],
               ],
               renderTrigger: true,
               description: t('How to format values and differences inside the cells.'),
@@ -252,7 +252,7 @@ const config: ControlPanelConfig = {
             name: 'piecewiseBuckets',
             config: {
               type: 'SliderControl',
-              label: t('Numero Classi Discrete'),
+              label: t('Number of discrete classes'),
               renderTrigger: true,
               min: 2,
               max: 10,
@@ -429,7 +429,7 @@ const config: ControlPanelConfig = {
             name: 'smartSort',
             config: {
               type: 'CheckboxControl',
-              label: t('Ordinamento Cronologico Intelligente'),
+              label: t('Smart chronological sorting'),
               renderTrigger: true,
               default: true,
               description: t('Sorts days (Monday to Sunday) and time slots (00:00-23:00) automatically.'),
@@ -443,8 +443,8 @@ const config: ControlPanelConfig = {
               default: 'top',
               renderTrigger: true,
               choices: [
-                ['top', t('In alto (Stile Calendario / Outlook)')],
-                ['bottom', t('In basso (Standard)')],
+                ['top', t('Top (calendar style)')],
+                ['bottom', t('Bottom (standard)')],
               ],
               description: t('Choose whether to place the days and columns at the top or at the bottom.'),
             },
@@ -498,7 +498,7 @@ const config: ControlPanelConfig = {
               choices: [
                 ['bottom', t('In Basso (Orizzontale)')],
                 ['top', t('In Alto (Orizzontale)')],
-                ['right', t('A Destra (Verticale)')],
+                ['right', t('Right (vertical)')],
               ],
               renderTrigger: true,
               visibility: ({ controls }: { controls: Record<string, any> }) =>
@@ -522,7 +522,7 @@ const config: ControlPanelConfig = {
             name: 'emitFilter',
             config: {
               type: 'CheckboxControl',
-              label: t('Abilita Cross-Filtering Interattivo'),
+              label: t('Enable cross-filtering'),
               renderTrigger: false,
               default: true,
               description: t('Clicking a cell instantly filters the other dashboard charts by X and Y.'),
@@ -572,7 +572,7 @@ const config: ControlPanelConfig = {
             name: 'totalAggregation',
             config: {
               type: 'SelectControl',
-              label: t('Tipo Aggregazione Totali'),
+              label: t('Totals aggregation'),
               default: 'sum',
               choices: [
                 ['sum', t('Sum (cumulative total)')],
