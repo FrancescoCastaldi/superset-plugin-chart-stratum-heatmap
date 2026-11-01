@@ -53,8 +53,8 @@ describe('describeDelta', () => {
   });
 
   it('uses the label of the new cells and stays silent without a comparison', () => {
-    expect(describeDelta(meta({ isZeroBaseline: true, comparisonValue: 0 }), 'both', 'Nuovo')).toEqual({
-      text: 'Nuovo',
+    expect(describeDelta(meta({ isZeroBaseline: true, comparisonValue: 0 }), 'both', 'New')).toEqual({
+      text: 'New',
       tone: 'fresh',
     });
     expect(describeDelta(meta({ comparisonValue: null, delta: null }))).toBeNull();

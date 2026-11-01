@@ -72,7 +72,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     time_2_label,
     delta_display_type = 'both',
     delta_color_scale = 'bipolar_diverging',
-    zero_baseline_badge_label = 'Nuovo',
+    zero_baseline_badge_label = 'New',
   } = fd;
 
   // 'legend' is the style value of 0.3.0: no mark on the cells, legend on.

@@ -173,7 +173,7 @@ const config: ControlPanelConfig = {
             config: {
               type: 'TextControl',
               label: t('Zero baseline label'),
-              default: 'Nuovo',
+              default: 'New',
               renderTrigger: true,
               description: t('Label shown when the comparison period was 0 (e.g. New).'),
               visibility: ({ controls }: { controls: Record<string, any> }) =>

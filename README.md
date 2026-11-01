@@ -12,15 +12,15 @@
 
 ## 📸 Visual Preview
 
-![StratumHeatmap Live Showcase](docs/images/live_dashboard_showcase.png)
+![StratumHeatmap on a dashboard](docs/images/live_dashboard_showcase.png)
 
-*Figure 1: StratumHeatmap live rendering on Apache Superset displaying monthly hospital activity density by admission regime with adaptive color scale, rounded cells, and in-cell values.*
+*Figure 1: Sales by product line and deal size on Superset's example sales data, with an adaptive color scale, rounded cells and in-cell values. Screenshots are real charts in Chrome.*
 
 ### 🔍 Matrix Detail & Continuous Gradient Preview
 
-![StratumHeatmap High Resolution Preview](docs/images/stratum_heatmap_preview.png)
+![StratumHeatmap by territory](docs/images/stratum_heatmap_preview.png)
 
-*Figure 2: High-resolution matrix view showing marginal row/column totals, smart chronological sorting, and WCAG 2.1 AA dynamic contrast text inversion.*
+*Figure 2: Product line by territory, with row and column totals and text that switches color for contrast on dark cells.*
 
 ---
 

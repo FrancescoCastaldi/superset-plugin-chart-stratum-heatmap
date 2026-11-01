@@ -77,7 +77,7 @@ const signed = (n: number): string => `${n > 0 ? '+' : n < 0 ? '-' : ''}${format
 export function describeDelta(
   meta: HeatmapCellData,
   deltaDisplayType: DeltaDisplayType = 'both',
-  zeroBaselineBadgeLabel = 'Nuovo',
+  zeroBaselineBadgeLabel = 'New',
 ): { text: string; tone: 'up' | 'down' | 'flat' | 'fresh' } | null {
   if (meta.comparisonValue === undefined || meta.comparisonValue === null) return null;
   if (meta.isZeroBaseline) return { text: zeroBaselineBadgeLabel, tone: 'fresh' };
