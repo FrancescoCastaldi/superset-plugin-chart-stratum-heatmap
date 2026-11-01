@@ -395,6 +395,22 @@ describe('transformProps', () => {
     expect(transformed.time2Label).toBe('Last year · 1 Jan - 31 Mar 2007');
   });
 
+  it('marks the comparison period as empty when it has no data', () => {
+    const transformed = transformProps({
+      ...defaultChartProps,
+      formData: {
+        ...defaultChartProps.formData,
+        heatmap_comparison_mode: 'time_offsets',
+        extra_form_data: {
+          time_range: '2008-01-01 : 2008-04-01',
+          custom_form_data: [{ period_labels: { reference: 'Q1', comparison: 'Q2' }, period_text: { reference: '1 Jan - 31 Mar 2008', comparison: '1 Apr - 30 Jun 2008' }, locale: 'en' }],
+        },
+      },
+      queriesData: [{ data: [{ GIORNO: 'Lunedì', ORA: '08:00', CONTEGGIO: 5, 'CONTEGGIO__2008-04-01 : 2008-07-01': null }] }],
+    } as unknown as ChartProps);
+    expect(transformed.time2Label).toBe('Q2 · 1 Apr - 30 Jun 2008 · no data');
+  });
+
   it('keeps the labels typed in the control panel over the offset text', () => {
     const transformed = transformProps({
       ...defaultChartProps,

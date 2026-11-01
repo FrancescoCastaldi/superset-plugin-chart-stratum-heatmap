@@ -1,5 +1,5 @@
 import { ChartProps, DataRecord } from '@superset-ui/core';
-import { periodTitle, readDashboardPeriods } from '../utils/dashboardPeriods';
+import { periodTitle, readDashboardPeriods, withNoData } from '../utils/dashboardPeriods';
 import {
   StratumHeatmapFormData,
   StratumHeatmapTransformedProps,
@@ -129,6 +129,12 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
   const referenceRange: string = (fd as any).extra_form_data?.time_range || '';
   // Names and readable ranges of the periods when a dashboard filter (the Calendar Filter) chose them
   const dashboardPeriods = readDashboardPeriods((fd as any).extra_form_data);
+  // A comparison period without a single value (no rows in it) is said to be empty
+  const comparisonIsEmpty = Boolean(compMetricName) && data.every(d => d[compMetricName as string] === null || d[compMetricName as string] === undefined);
+  const comparisonName = offsetText
+    ? periodTitle(dashboardPeriods.comparisonName, dashboardPeriods.comparisonText, offsetText)
+    : undefined;
+  const comparisonTitle = comparisonIsEmpty ? withNoData(comparisonName, dashboardPeriods.locale) : comparisonName;
 
   // 1. Estrazione categorie uniche (escludendo eventuale etichetta totale da dati grezzi)
   const rawXCategories = Array.from(
@@ -461,7 +467,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     heatmapComparisonMode: heatmap_comparison_mode,
     comparisonMetric: comparison_metric,
     time1Label: time_1_label || (offsetText ? periodTitle(dashboardPeriods.referenceName, dashboardPeriods.referenceText, referenceRange || undefined) : undefined),
-    time2Label: time_2_label || (offsetText ? periodTitle(dashboardPeriods.comparisonName, dashboardPeriods.comparisonText, offsetText) : undefined),
+    time2Label: time_2_label || comparisonTitle,
     deltaDisplayType: delta_display_type,
     deltaColorScale: delta_color_scale,
     zeroBaselineBadgeLabel: zero_baseline_badge_label,

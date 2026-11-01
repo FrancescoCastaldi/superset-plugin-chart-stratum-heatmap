@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { periodTitle, readDashboardPeriods } from '../src/utils/dashboardPeriods';
+import { periodTitle, readDashboardPeriods, withNoData } from '../src/utils/dashboardPeriods';
 
 describe('dashboardPeriods', () => {
   const info = {
     version: 1,
     period_labels: { reference: 'This year', comparison: 'Last year' },
     period_text: { reference: '1 Jan - 31 Mar 2008', comparison: '1 Jan - 31 Mar 2007' },
+    locale: 'it',
   };
 
   it('reads the names and ranges from the list Superset keeps', () => {
@@ -14,6 +15,7 @@ describe('dashboardPeriods', () => {
       comparisonName: 'Last year',
       referenceText: '1 Jan - 31 Mar 2008',
       comparisonText: '1 Jan - 31 Mar 2007',
+      locale: 'it',
     });
   });
 
@@ -34,5 +36,11 @@ describe('dashboardPeriods', () => {
     expect(periodTitle(undefined, '1 Jan - 31 Mar 2008', 'raw')).toBe('1 Jan - 31 Mar 2008');
     expect(periodTitle('This year', undefined, 'raw')).toBe('This year');
     expect(periodTitle(undefined, undefined, 'raw')).toBe('raw');
+  });
+
+  it('marks an empty period in the language of the filter', () => {
+    expect(withNoData('Last year · 2007', 'en')).toBe('Last year · 2007 · no data');
+    expect(withNoData('Anno scorso · 2007', 'it')).toBe('Anno scorso · 2007 · nessun dato');
+    expect(withNoData(undefined, 'en')).toBeUndefined();
   });
 });
