@@ -8,13 +8,14 @@ import example from '../images/example.png';
 const t = (str: string) => str;
 
 const metadata = new ChartMetadata({
-  name: t('StratumHeatmap — Interactive ECharts Matrix Grid'),
+  name: t('StratumHeatmap: Interactive ECharts Matrix Grid'),
   description: t(
     'A high-performance 2D Heatmap matrix grid powered by Apache ECharts with dual-mode visualMap (continuous & piecewise), auto-contrast cell text, smart chronological sorting for weekdays and hours, and native Superset cross-filtering.',
   ),
   behaviors: [Behavior.InteractiveChart, Behavior.DrillToDetail],
   category: t('Distribution'),
   tags: [
+    t('Stratum'),
     t('StratumHeatmap'),
     t('Heatmap'),
     t('Matrix'),
