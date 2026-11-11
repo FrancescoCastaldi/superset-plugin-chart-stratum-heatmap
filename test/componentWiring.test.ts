@@ -61,4 +61,26 @@ describe('the component draws the formats it receives', () => {
     const visualMap = Array.isArray(option.visualMap) ? option.visualMap[0] : option.visualMap;
     expect(visualMap.formatter).toBeUndefined();
   });
+
+  it('shows the delta legend and hides visualMap when cells are colored by delta even without comparisonHighlight', () => {
+    const option: any = heatmapOptionFromProps(
+      run(
+        {
+          heatmap_comparison_mode: 'dual_metric',
+          comparison_metric: 'VALORE_PREV',
+          delta_color_scale: 'bipolar_diverging',
+          comparisonHighlight: false,
+          numberFormat: '.1%',
+        },
+        [
+          { GIORNO: 'Lunedì', ORA: '08:00', VALORE: 0.4, VALORE_PREV: 0.2 },
+          { GIORNO: 'Martedì', ORA: '08:00', VALORE: 0.1, VALORE_PREV: 0.3 },
+        ],
+      ) as any,
+    );
+    const visualMap = Array.isArray(option.visualMap) ? option.visualMap[0] : option.visualMap;
+    expect(visualMap.show).toBe(false);
+    expect(option.graphic?.some((g: any) => g.style?.text === '+20.0%')).toBe(true);
+    expect(option.graphic?.some((g: any) => /vs/.test(g.style?.text ?? ''))).toBe(false);
+  });
 });

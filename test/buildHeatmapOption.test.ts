@@ -201,4 +201,39 @@ describe('buildHeatmapOption', () => {
     expect(option.series[0].data).toHaveLength(1);
     expect(option.series[0].data[0].value).toBe(tuple);
   });
+
+  it('uses zeroBaselineBadgeLabel and deltaDisplayType in normal view labels and tooltip', () => {
+    const zeroMeta = meta({ value: 25, formattedValue: '25', comparisonValue: 0, delta: 25, deltaPercent: null, isZeroBaseline: true });
+    const compMeta = meta({ value: 120, formattedValue: '120', comparisonValue: 100, delta: 20, deltaPercent: 20 });
+
+    const optionCustom = buildHeatmapOption(baseParams({
+      comparisonHighlight: false,
+      deltaDisplayType: 'percentage',
+      zeroBaselineBadgeLabel: 'Primo accesso',
+      matrixData: [
+        { value: [0, 0, 25, zeroMeta] },
+        { value: [1, 0, 120, compMeta] },
+      ],
+    }));
+
+    const lblCustom = optionCustom.series[0].label.formatter;
+    expect(lblCustom({ data: { value: [0, 0, 25, zeroMeta] } })).toBe('25\nPrimo accesso');
+    expect(lblCustom({ data: { value: [1, 0, 120, compMeta] } })).toBe('120\n+20.0%');
+
+    const tipCustom = optionCustom.tooltip.formatter;
+    expect(tipCustom({ data: { value: [0, 0, 25, zeroMeta] } })).toContain('Primo accesso');
+    expect(tipCustom({ data: { value: [0, 0, 25, zeroMeta] } })).not.toContain('[Nuovo]');
+    expect(tipCustom({ data: { value: [1, 0, 120, compMeta] } })).toContain('+20.0%');
+    expect(tipCustom({ data: { value: [1, 0, 120, compMeta] } })).not.toContain('+20 (+20.0%)');
+
+    const optionAbs = buildHeatmapOption(baseParams({
+      comparisonHighlight: false,
+      deltaDisplayType: 'absolute',
+      matrixData: [{ value: [1, 0, 120, compMeta] }],
+    }));
+    expect(optionAbs.series[0].label.formatter({ data: { value: [1, 0, 120, compMeta] } })).toBe('120\n+20');
+    const tipAbs = optionAbs.tooltip.formatter({ data: { value: [1, 0, 120, compMeta] } });
+    expect(tipAbs).toContain('+20');
+    expect(tipAbs).not.toContain('+20.0%');
+  });
 });

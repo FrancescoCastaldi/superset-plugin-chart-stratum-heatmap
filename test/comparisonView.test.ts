@@ -220,11 +220,21 @@ describe('comparison layout by cell size', () => {
 });
 
 describe('highlighted comparison in the option', () => {
-  it('leaves the classic view alone when the flag is off', () => {
-    const option = buildHeatmapOption(params());
+  it('leaves the classic view alone when the flag is off and sequential_standard is chosen', () => {
+    const option = buildHeatmapOption(params({ deltaColorScale: 'sequential_standard' }));
     expect(option.graphic).toBeUndefined();
     expect(option.series[0].label.rich).toBeUndefined();
     expect(option.visualMap.show).toBe(true);
+    expect(labelOf(option, 0, 0, 120, 100, 'A')).toBe('120\n+20 (+20.0%)');
+  });
+
+  it('shows the delta scale without header when colored by delta and comparisonHighlight is off', () => {
+    const option = buildHeatmapOption(params({ comparisonHighlight: false, deltaColorScale: 'bipolar_diverging' }));
+    expect(option.series[0].label.rich).toBeUndefined();
+    expect(option.visualMap.show).toBe(false);
+    expect(option.graphic.some((g: any) => g.style?.text === '+40')).toBe(true);
+    expect(option.graphic.some((g: any) => g.style?.text === '-40')).toBe(true);
+    expect(option.graphic.some((g: any) => /vs/.test(g.style?.text ?? ''))).toBe(false);
     expect(labelOf(option, 0, 0, 120, 100, 'A')).toBe('120\n+20 (+20.0%)');
   });
 

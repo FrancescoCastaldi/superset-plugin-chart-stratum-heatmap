@@ -1,27 +1,43 @@
 import {
   ControlPanelConfig,
+  ControlPanelsContainerProps,
   sharedControls,
 } from '@superset-ui/chart-controls';
-import { hasTimeMetric } from './timeMetricHints';
+import { showDurationControl } from './timeMetricHints';
 
-const t = (str: string) => str;
+const validateNonEmpty = (value: unknown): string | false =>
+  value === null ||
+  value === undefined ||
+  value === '' ||
+  (Array.isArray(value) && value.length === 0)
+    ? 'Campo obbligatorio'
+    : false;
+
+const isComparing = ({ controls }: ControlPanelsContainerProps) =>
+  Boolean(controls?.heatmap_comparison_mode?.value && controls.heatmap_comparison_mode.value !== 'none');
+
+const hasAnyTotals = ({ controls }: ControlPanelsContainerProps) =>
+  controls?.showRowTotals?.value !== false || controls?.showColumnTotals?.value !== false;
 
 const config: ControlPanelConfig = {
   controlPanelSections: [
     {
-      label: t('Query Configuration'),
+      label: 'Dati',
       expanded: true,
+      tabOverride: 'data',
+      description: 'Dimensioni di colonne e righe, metrica da misurare, filtri e ordinamento.',
       controlSetRows: [
         [
           {
             name: 'xAxisDimension',
             config: {
               ...sharedControls.groupby,
-              label: t('X-Axis Dimension (Columns)'),
-              description: t('Dimension for the horizontal axis (e.g., day of the week)'),
+              label: 'Dimensione asse X (colonne)',
+              description:
+                'Colonna usata per le intestazioni orizzontali della matrice. Esempio: Giorno della settimana, Mese, Reparto.',
               multi: false,
               clearable: true,
-              validators: [],
+              validators: [validateNonEmpty],
             },
           },
         ],
@@ -30,11 +46,12 @@ const config: ControlPanelConfig = {
             name: 'yAxisDimension',
             config: {
               ...sharedControls.groupby,
-              label: t('Y-Axis Dimension (Rows)'),
-              description: t('Dimension for the vertical axis (e.g., hour or time slot)'),
+              label: 'Dimensione asse Y (righe)',
+              description:
+                'Colonna usata per le etichette verticali della matrice. Esempio: Fascia oraria, Sede, Tipologia di accesso.',
               multi: false,
               clearable: true,
-              validators: [],
+              validators: [validateNonEmpty],
             },
           },
         ],
@@ -43,66 +60,52 @@ const config: ControlPanelConfig = {
             name: 'metric',
             config: {
               ...sharedControls.metric,
-              label: t('Metric / Cell Value'),
-              description: t('Metric to measure intensity and density (e.g., booking volume)'),
+              label: 'Metrica (valore delle celle)',
+              description:
+                'Valore numerico o durata visualizzato in ogni cella e usato per la scala colore. Esempi: Accessi, Ricavi, Tempo medio attesa.',
               clearable: true,
-              validators: [],
+              validators: [validateNonEmpty],
             },
           },
         ],
         [
           {
-            name: 'numberFormat',
+            name: 'smartSort',
             config: {
-              ...sharedControls.y_axis_format,
-              label: t('Number format'),
-              default: 'SMART_NUMBER',
+              type: 'CheckboxControl',
+              label: 'Ordinamento cronologico intelligente',
+              default: true,
               renderTrigger: true,
-              description: t(
-                'How the values are written in the cells, the totals, the legend and the tooltips: percentage, integer, decimals, thousands... Percentage formats expect a ratio (0.12 is shown as 12%). It does not apply to a metric of type Time, which is written with the duration format.',
-              ),
+              description:
+                'Ordina automaticamente giorni della settimana, mesi e orari in sequenza naturale invece che alfabetica. Esempio: Lunedì, Martedì invece di Domenica, Giovedì.',
             },
           },
         ],
         [
           {
-            name: 'timeDisplayFormat',
+            name: 'xAxisSortAsc',
             config: {
-              type: 'SelectControl',
-              label: t('Duration format'),
+              type: 'CheckboxControl',
+              label: 'Asse X crescente',
+              default: true,
               renderTrigger: true,
-              clearable: false,
-              default: 'auto',
-              visibility: hasTimeMetric,
-              choices: [
-                ['auto', t('Automatic (mm:ss, or h:mm:ss from one hour)')],
-                ['hms', t('Hours, minutes, seconds (1:05:30)')],
-                ['ms', t('Minutes and seconds (65:30)')],
-                ['minutes', t('Decimal minutes (65.5 min)')],
-                ['hours', t('Decimal hours (1.09 h)')],
-                ['seconds', t('Seconds (3930 s)')],
-              ],
-              description: t(
-                'Only for a metric of type Time (hh:mm:ss, for example an average waiting time): it is read automatically and written as a duration in the cells, the legend and the tooltips, instead of with the number format. Other metrics keep the number format. The totals of a Time metric are the average of the cells with data, whatever the totals aggregation says.',
-              ),
+              visibility: ({ controls }: ControlPanelsContainerProps) =>
+                controls?.smartSort?.value !== false,
+              description:
+                'Direzione dell\'ordinamento cronologico sulle colonne (es. Lunedì prima di Domenica).',
             },
           },
           {
-            name: 'timeFractionDigits',
+            name: 'yAxisSortAsc',
             config: {
-              type: 'SelectControl',
-              label: t('Duration decimals'),
+              type: 'CheckboxControl',
+              label: 'Asse Y crescente',
+              default: true,
               renderTrigger: true,
-              clearable: false,
-              default: 0,
-              visibility: hasTimeMetric,
-              choices: [
-                [0, t('None')],
-                [1, t('One')],
-                [2, t('Two')],
-                [3, t('Three')],
-              ],
-              description: t('Digits after the comma in the seconds (clock formats) or in the value (decimal formats). Example: 0 writes 12:54, 3 writes 12:54.425.'),
+              visibility: ({ controls }: ControlPanelsContainerProps) =>
+                controls?.smartSort?.value !== false,
+              description:
+                'Direzione dell\'ordinamento cronologico sulle righe (es. 08:00 prima delle 20:00).',
             },
           },
         ],
@@ -111,24 +114,28 @@ const config: ControlPanelConfig = {
       ],
     },
     {
-      label: t('Time comparison (Time 1 vs Time 2)'),
+      label: 'Confronto tra periodi',
       expanded: false,
+      tabOverride: 'data',
+      description: 'Confronta il periodo principale con un periodo precedente o una seconda metrica.',
       controlSetRows: [
         [
           {
             name: 'heatmap_comparison_mode',
             config: {
               type: 'SelectControl',
-              label: t('Time comparison mode'),
+              label: 'Modalità di confronto',
               default: 'none',
+              clearable: false,
+              renderTrigger: false,
               choices: [
-                ['none', t('No comparison (single period)')],
-                ['dual_metric', t('Explicit comparison metric (Time 1 vs Time 2)')],
-                ['time_offsets', t('Time Offsets Nativo Superset (__prev)')],
-                ['period_column', t('Period column or anti-Cartesian flag')],
+                ['none', 'Nessun confronto (singolo periodo)'],
+                ['dual_metric', 'Metrica di confronto esplicita (T1 vs T2)'],
+                ['time_offsets', 'Calendar Filter o spostamento temporale (__prev)'],
+                ['period_column', 'Colonne di confronto già nei dati'],
               ],
-              renderTrigger: true,
-              description: t('Select the comparison mode to show the cell and margin differences.'),
+              description:
+                'Sceglie come ricavare il periodo di confronto. Esempio: usa "Calendar Filter o spostamento temporale" con un filtro calendario in dashboard.',
             },
           },
         ],
@@ -137,12 +144,13 @@ const config: ControlPanelConfig = {
             name: 'comparison_metric',
             config: {
               ...sharedControls.metric,
-              label: t('Comparison metric (Time 2)'),
-              description: t('Metric for the dual-metric time comparison (e.g. accessi_conf, ore_erogate_conf).'),
+              label: 'Metrica di confronto (T2)',
+              description:
+                'Seconda metrica da confrontare con la principale. Esempio: accessi_anno_precedente rispetto ad accessi.',
               clearable: true,
               validators: [],
-              visibility: ({ controls }: { controls: Record<string, any> }) =>
-                Boolean(controls?.heatmap_comparison_mode?.value === 'dual_metric'),
+              visibility: ({ controls }: ControlPanelsContainerProps) =>
+                controls?.heatmap_comparison_mode?.value === 'dual_metric',
             },
           },
         ],
@@ -151,24 +159,24 @@ const config: ControlPanelConfig = {
             name: 'time_1_label',
             config: {
               type: 'TextControl',
-              label: t('Time 1 label (reference)'),
-              default: 'Time 1 (reference)',
+              label: 'Nome periodo corrente (T1)',
+              default: '',
               renderTrigger: true,
-              description: t('Name shown for the reference period.'),
-              visibility: ({ controls }: { controls: Record<string, any> }) =>
-                Boolean(controls?.heatmap_comparison_mode?.value && controls?.heatmap_comparison_mode?.value !== 'none'),
+              visibility: isComparing,
+              description:
+                'Etichetta del periodo di riferimento nell\'intestazione e nel tooltip. Lascia vuoto per usare automaticamente il Calendar Filter. Esempio: Anno corrente.',
             },
           },
           {
             name: 'time_2_label',
             config: {
               type: 'TextControl',
-              label: t('Time 2 label (comparison)'),
-              default: 'Time 2 (comparison)',
+              label: 'Nome periodo di confronto (T2)',
+              default: '',
               renderTrigger: true,
-              description: t('Name shown for the comparison period.'),
-              visibility: ({ controls }: { controls: Record<string, any> }) =>
-                Boolean(controls?.heatmap_comparison_mode?.value && controls?.heatmap_comparison_mode?.value !== 'none'),
+              visibility: isComparing,
+              description:
+                'Etichetta del periodo di confronto nell\'intestazione e nel tooltip. Lascia vuoto per usare automaticamente il Calendar Filter. Esempio: Anno precedente.',
             },
           },
         ],
@@ -177,34 +185,36 @@ const config: ControlPanelConfig = {
             name: 'delta_display_type',
             config: {
               type: 'SelectControl',
-              label: t('Cell difference format'),
+              label: 'Formato dello scostamento',
               default: 'both',
-              choices: [
-                ['both', t('Both: value + delta % (e.g. 120 (+20%))')],
-                ['absolute', t('Absolute delta only (e.g. +20)')],
-                ['percentage', t('Delta % only (e.g. +20%)')],
-              ],
+              clearable: false,
               renderTrigger: true,
-              description: t('How to format values and differences inside the cells.'),
-              visibility: ({ controls }: { controls: Record<string, any> }) =>
-                Boolean(controls?.heatmap_comparison_mode?.value && controls?.heatmap_comparison_mode?.value !== 'none'),
+              visibility: isComparing,
+              choices: [
+                ['both', 'Assoluto e percentuale (es. +20 (+20,0%))'],
+                ['absolute', 'Solo variazione assoluta (es. +20)'],
+                ['percentage', 'Solo variazione percentuale (es. +20,0%)'],
+              ],
+              description:
+                'Sceglie quali componenti della variazione mostrare nelle celle e nei tooltip. Esempio: "+20 (+20,0%)".',
             },
           },
           {
             name: 'delta_color_scale',
             config: {
               type: 'SelectControl',
-              label: t('Difference color scale'),
+              label: 'Scala colori per scostamento',
               default: 'bipolar_diverging',
-              choices: [
-                ['bipolar_diverging', t('Bipolare Divergente (Rosso / Neutro / Verde)')],
-                ['polarity_inverted', t('Inverted polarity (green decrease / red increase)')],
-                ['sequential_standard', t('Sequenziale Standard')],
-              ],
+              clearable: false,
               renderTrigger: true,
-              description: t('Color mapping for the diverging scale centered on 0.'),
-              visibility: ({ controls }: { controls: Record<string, any> }) =>
-                Boolean(controls?.heatmap_comparison_mode?.value && controls?.heatmap_comparison_mode?.value !== 'none'),
+              visibility: isComparing,
+              choices: [
+                ['bipolar_diverging', 'Bipolare divergente (Rosso calo / Verde crescita)'],
+                ['polarity_inverted', 'Polarità invertita (Verde calo / Rosso crescita)'],
+                ['sequential_standard', 'Sequenziale sul valore (ignora delta nel colore)'],
+              ],
+              description:
+                'Colora le celle in base al delta centrato su zero oppure mantiene la scala colore del valore. Esempio: Polarità invertita per tempi di attesa.',
             },
           },
         ],
@@ -213,43 +223,168 @@ const config: ControlPanelConfig = {
             name: 'comparisonHighlight',
             config: {
               type: 'CheckboxControl',
-              label: t('Highlight the reference / comparison'),
-              renderTrigger: true,
+              label: 'Vista evidenziata (badge e intestazione T1 vs T2)',
               default: false,
-              description: t(
-                'Each cell shows the value and, below it, a pill with an arrow and the change; the legend becomes the change scale and a header with the two periods appears at the top. Off: the usual view.',
-              ),
-              visibility: ({ controls }: { controls: Record<string, any> }) =>
-                Boolean(controls?.heatmap_comparison_mode?.value && controls?.heatmap_comparison_mode?.value !== 'none'),
+              renderTrigger: true,
+              visibility: isComparing,
+              description:
+                'Mostra l\'intestazione T1 vs T2 ai bordi del grafico, badge direzionali nelle celle e mantiene visibili le celle azzerate in T1 presenti in T2.',
             },
           },
-        ],
-        [
           {
             name: 'zero_baseline_badge_label',
             config: {
               type: 'TextControl',
-              label: t('Zero baseline label'),
+              label: 'Etichetta per celle con T2 = 0',
               default: 'New',
               renderTrigger: true,
-              description: t('Label shown when the comparison period was 0 (e.g. New).'),
-              visibility: ({ controls }: { controls: Record<string, any> }) =>
-                Boolean(controls?.heatmap_comparison_mode?.value && controls?.heatmap_comparison_mode?.value !== 'none'),
+              visibility: isComparing,
+              description:
+                'Testo mostrato al posto del delta percentuale quando il valore del periodo di confronto è zero. Esempio: "New" o "Nuovo".',
             },
           },
         ],
       ],
     },
     {
-      label: t('Customize: palette & colors'),
-      expanded: true,
+      label: 'Formato dei valori',
+      expanded: false,
+      tabOverride: 'customize',
+      description: 'Formattazione numerica e visualizzazione delle metriche temporali (durate).',
+      controlSetRows: [
+        [
+          {
+            name: 'numberFormat',
+            config: {
+              ...sharedControls.y_axis_format,
+              label: 'Formato dei numeri',
+              default: 'SMART_NUMBER',
+              renderTrigger: true,
+              clearable: true,
+              description:
+                'Formato D3 applicato ai numeri in celle, legenda e tooltip. Esempi: SMART_NUMBER, ,.0f, .1%, €,.2f.',
+            },
+          },
+        ],
+        [
+          {
+            name: 'timeDisplayFormat',
+            config: {
+              type: 'SelectControl',
+              label: 'Formato delle durate',
+              default: 'auto',
+              clearable: false,
+              renderTrigger: true,
+              visibility: showDurationControl('timeDisplayFormat', 'auto'),
+              choices: [
+                ['auto', 'Automatico (mm:ss, oppure h:mm:ss da un\'ora)'],
+                ['hms', 'Ore, minuti e secondi (1:05:30)'],
+                ['ms', 'Minuti e secondi (65:30)'],
+                ['minutes', 'Minuti decimali (65,5 min)'],
+                ['hours', 'Ore decimali (1,09 h)'],
+                ['seconds', 'Secondi (3930 s)'],
+              ],
+              description:
+                'Per metriche di tipo Time: converte i secondi in durata leggibile in celle, legenda e tooltip. Esempio: 12:54.',
+            },
+          },
+          {
+            name: 'timeFractionDigits',
+            config: {
+              type: 'SelectControl',
+              label: 'Decimali delle durate',
+              default: 0,
+              clearable: false,
+              renderTrigger: true,
+              visibility: showDurationControl('timeFractionDigits', 0),
+              choices: [
+                [0, 'Nessuno (0)'],
+                [1, 'Uno (1)'],
+                [2, 'Due (2)'],
+                [3, 'Tre (3)'],
+              ],
+              description:
+                'Cifre decimali sui secondi nei formati orologio o sui formati decimali. Esempio: 0 scrive 12:54, 2 scrive 12:54.43.',
+            },
+          },
+        ],
+      ],
+    },
+    {
+      label: 'Totali',
+      expanded: false,
+      tabOverride: 'customize',
+      description: 'Riga e colonna dei totali marginali ed eventuale metodo di aggregazione.',
+      controlSetRows: [
+        [
+          {
+            name: 'showRowTotals',
+            config: {
+              type: 'CheckboxControl',
+              label: 'Mostra totali di riga',
+              default: true,
+              renderTrigger: true,
+              description:
+                'Aggiunge a destra una colonna riepilogativa calcolata su tutte le celle della riga.',
+            },
+          },
+          {
+            name: 'showColumnTotals',
+            config: {
+              type: 'CheckboxControl',
+              label: 'Mostra totali di colonna',
+              default: true,
+              renderTrigger: true,
+              description:
+                'Aggiunge in basso una riga riepilogativa calcolata su tutte le celle della colonna.',
+            },
+          },
+        ],
+        [
+          {
+            name: 'totalLabel',
+            config: {
+              type: 'TextControl',
+              label: 'Etichetta dei totali',
+              default: 'Total',
+              renderTrigger: true,
+              visibility: hasAnyTotals,
+              description:
+                'Testo mostrato nell\'intestazione della riga e della colonna di totale. Esempio: Total, Totale, Media.',
+            },
+          },
+          {
+            name: 'totalAggregation',
+            config: {
+              type: 'SelectControl',
+              label: 'Aggregazione dei totali',
+              default: 'sum',
+              clearable: false,
+              renderTrigger: true,
+              visibility: hasAnyTotals,
+              choices: [
+                ['sum', 'Somma (totale cumulativo)'],
+                ['avg', 'Media (valore medio delle celle)'],
+              ],
+              description:
+                'Metodo per calcolare i totali marginali di metriche numeriche (le metriche Time usano sempre la media). Esempio: Media per tassi percentuali.',
+            },
+          },
+        ],
+      ],
+    },
+    {
+      label: 'Aspetto',
+      expanded: false,
+      tabOverride: 'customize',
+      description: 'Palette colori, scala legenda, geometria delle celle, testi e indicatori max/min.',
       controlSetRows: [
         [
           {
             name: 'linearColorScheme',
             config: {
               type: 'ColorSchemeControl',
-              label: t('Color Palette'),
+              label: 'Palette colori',
               default: 'wavesOfBlue',
               renderTrigger: true,
               schemes: () => ({
@@ -274,17 +409,32 @@ const config: ControlPanelConfig = {
                   colors: ['#fffaf0', '#fbd38d', '#ed8936', '#9c4221'],
                 },
               }),
-              description: t('Select gradient color palette. Defaults to Waves of Blue Corporate.'),
+              description:
+                'Scala cromatica applicata alle celle in modalità sequenziale. Esempio: Waves of Blue (Corporate).',
             },
           },
+        ],
+        [
           {
             name: 'reversePalette',
             config: {
               type: 'CheckboxControl',
-              label: t('Invert color scale'),
-              renderTrigger: true,
+              label: 'Inverti scala colori',
               default: false,
-              description: t('Reverses the direction of the color scale (from darkest to lightest).'),
+              renderTrigger: true,
+              description:
+                'Scambia i colori minimo e massimo (es. scuro sui valori bassi invece che sui valori alti).',
+            },
+          },
+          {
+            name: 'zeroCellNeutral',
+            config: {
+              type: 'CheckboxControl',
+              label: 'Sfondo neutro per celle a zero',
+              default: true,
+              renderTrigger: true,
+              description:
+                'Usa un grigio neutro sulle celle con valore 0 o mancante per distinguerle dal resto della scala.',
             },
           },
         ],
@@ -293,31 +443,32 @@ const config: ControlPanelConfig = {
             name: 'visualMapMode',
             config: {
               type: 'SelectControl',
-              label: t('Color scale mode'),
+              label: 'Modalità della scala colori',
               default: 'continuous',
-              choices: [
-                ['continuous', t('Gradiente Continuo (Smooth Slider)')],
-                ['piecewise', t('Classi Discrete a Blocchi (Clickable Legend)')],
-              ],
+              clearable: false,
               renderTrigger: true,
-              description: t(
-                'Choose between a continuous gradient scale or discrete range classes.',
-              ),
+              choices: [
+                ['continuous', 'Gradiente continuo (slider sfumato)'],
+                ['piecewise', 'Classi discrete a blocchi (legenda cliccabile)'],
+              ],
+              description:
+                'Sceglie tra gradiente sfumato continuo o fasce discrete selezionabili in legenda.',
             },
           },
           {
             name: 'piecewiseBuckets',
             config: {
               type: 'SliderControl',
-              label: t('Number of discrete classes'),
-              renderTrigger: true,
+              label: 'Numero di classi discrete',
+              default: 5,
               min: 2,
               max: 10,
               step: 1,
-              default: 5,
-              visibility: ({ controls }: { controls: Record<string, any> }) =>
-                Boolean(controls?.visualMapMode?.value === 'piecewise'),
-              description: t('Number of discrete color ranges when using block mode.'),
+              renderTrigger: true,
+              visibility: ({ controls }: ControlPanelsContainerProps) =>
+                controls?.visualMapMode?.value === 'piecewise',
+              description:
+                'Numero di fasce discrete quando la modalità è "Classi discrete". Esempio: 5.',
             },
           },
         ],
@@ -326,241 +477,213 @@ const config: ControlPanelConfig = {
             name: 'customMinValue',
             config: {
               type: 'TextControl',
-              label: t('Custom scale minimum (optional)'),
-              renderTrigger: true,
+              label: 'Minimo scala manuale (opzionale)',
               default: null,
-              description: t('Forces the minimum of the color scale (empty uses the actual data minimum).'),
+              renderTrigger: true,
+              description:
+                'Fissa manualmente il minimo della scala colori; lascia vuoto per usare il minimo dei dati. Esempio: 0.',
             },
           },
           {
             name: 'customMaxValue',
             config: {
               type: 'TextControl',
-              label: t('Custom scale maximum (optional)'),
-              renderTrigger: true,
+              label: 'Massimo scala manuale (opzionale)',
               default: null,
-              description: t('Forces the maximum of the color scale to normalize outliers or peaks.'),
+              renderTrigger: true,
+              description:
+                'Fissa manualmente il massimo della scala colori; lascia vuoto per usare il massimo dei dati. Esempio: 100.',
             },
           },
         ],
-      ],
-    },
-    {
-      label: t('Customize: cell style & spacing'),
-      expanded: true,
-      controlSetRows: [
         [
           {
             name: 'cellRadius',
             config: {
               type: 'SliderControl',
-              label: t('Cell corner radius (px)'),
-              renderTrigger: true,
-              min: 0,
-              max: 16,
-              step: 1,
+              label: 'Arrotondamento angoli cella (px)',
               default: 4,
-              description: t('Rounding of the corners of each matrix block.'),
-            },
-          },
-          {
-            name: 'showSmartAnnotations',
-            config: {
-              type: 'CheckboxControl',
-              label: t('Show smart annotations (max/min)'),
-              renderTrigger: true,
-              default: true,
-              description: t('Automatically highlights the cells with the highest 🏆 and lowest 📉 absolute value.'),
-            },
-          },
-          {
-            name: 'smartAnnotationStyle',
-            config: {
-              type: 'SelectControl',
-              label: t('Position of 🏆 and 📉'),
-              renderTrigger: true,
-              default: 'pin',
-              clearable: false,
-              choices: [
-                ['pin', t('Pin above the cell (classic)')],
-                ['cell_badge', t('Badge in the top-right corner of the cell')],
-                ['none', t('No mark on the cells')],
-              ],
-              description: t(
-                'Pin: mark above the cell, as before. Badge: circle in the top-right corner of the cell, inside its borders and away from the value. No mark: the cells stay clean, useful together with the legend.',
-              ),
-              visibility: ({ controls }: { controls: Record<string, any> }) =>
-                controls?.showSmartAnnotations?.value !== false,
-            },
-          },
-          {
-            name: 'showAnnotationLegend',
-            config: {
-              type: 'CheckboxControl',
-              label: t('🏆 / 📉 legend next to the color scale'),
-              renderTrigger: true,
-              default: false,
-              description: t(
-                'Writes next to the color scale which cell has the highest 🏆 and which the lowest 📉 value. It can be used together with the marks on the cells.',
-              ),
-              visibility: ({ controls }: { controls: Record<string, any> }) =>
-                controls?.showSmartAnnotations?.value !== false,
-            },
-          },
-          {
-            name: 'smartAnnotationThreshold',
-            config: {
-              type: 'TextControl',
-              label: t('Minimum value for 🏆 and 📉 (optional)'),
-              renderTrigger: true,
-              default: null,
-              description: t(
-                'Cells below this value get no marks or legend. Leave empty to consider all of them; set 1 to ignore empty or zero cells.',
-              ),
-              visibility: ({ controls }: { controls: Record<string, any> }) =>
-                controls?.showSmartAnnotations?.value !== false,
-            },
-          },
-        ],
-        [
-          {
-            name: 'zeroCellNeutral',
-            config: {
-              type: 'CheckboxControl',
-              label: t('Neutral color for zero or empty cells'),
-              renderTrigger: true,
-              default: true,
-              description: t('Colors the cells with value 0 in a faint neutral grey (#f1f5f9) to tell them apart.'),
-            },
-          },
-        ],
-      ],
-    },
-    {
-      label: t('Customize: values & typography'),
-      expanded: true,
-      controlSetRows: [
-        [
-          {
-            name: 'showValues',
-            config: {
-              type: 'CheckboxControl',
-              label: t('Show numbers in the cells'),
-              renderTrigger: true,
-              default: true,
-              description: t('Shows the exact numeric value in the center of each cell.'),
-            },
-          },
-          {
-            name: 'valueFontSize',
-            config: {
-              type: 'SliderControl',
-              label: t('Value font size (px)'),
-              renderTrigger: true,
-              min: 8,
-              max: 18,
+              min: 0,
+              max: 12,
               step: 1,
-              default: 11,
-              visibility: ({ controls }: { controls: Record<string, any> }) =>
-                Boolean(controls?.showValues?.value !== false),
-              description: t('Size of the numeric text inside the cells.'),
-            },
-          },
-        ],
-        [
-          {
-            name: 'showZeroValues',
-            config: {
-              type: 'CheckboxControl',
-              label: t('Show "0" on empty cells'),
               renderTrigger: true,
-              default: false,
-              visibility: ({ controls }: { controls: Record<string, any> }) =>
-                Boolean(controls?.showValues?.value !== false),
-              description: t('When off, cells with value 0 stay clean, with no number.'),
-            },
-          },
-        ],
-        [
-          {
-            name: 'smartSort',
-            config: {
-              type: 'CheckboxControl',
-              label: t('Smart chronological sorting'),
-              renderTrigger: true,
-              default: true,
-              description: t('Sorts days (Monday to Sunday) and time slots (00:00-23:00) automatically.'),
+              description:
+                'Raggio di curvatura degli angoli delle celle in pixel (0 = squadrate, 4 = arrotondate).',
             },
           },
           {
             name: 'xAxisPosition',
             config: {
               type: 'SelectControl',
-              label: t('X axis position (days/columns)'),
+              label: 'Posizione asse X (colonne)',
               default: 'top',
+              clearable: false,
               renderTrigger: true,
               choices: [
-                ['top', t('Top (calendar style)')],
-                ['bottom', t('Bottom (standard)')],
+                ['top', 'In alto (stile calendario)'],
+                ['bottom', 'In basso (standard)'],
               ],
-              description: t('Choose whether to place the days and columns at the top or at the bottom.'),
+              description:
+                'Posiziona le etichette delle colonne sopra la griglia (stile calendario) o sotto.',
             },
           },
         ],
         [
           {
-            name: 'xAxisSortAsc',
+            name: 'showValues',
             config: {
               type: 'CheckboxControl',
-              label: t('Sort X axis ascending'),
-              renderTrigger: true,
+              label: 'Mostra valori nelle celle',
               default: true,
-              description: t('Sort direction of the horizontal columns.'),
-            },
-          },
-          {
-            name: 'yAxisSortAsc',
-            config: {
-              type: 'CheckboxControl',
-              label: t('Sort Y axis ascending'),
               renderTrigger: true,
-              default: true,
-              description: t('Sort direction of the vertical rows.'),
+              description:
+                'Visualizza il numero o la durata all\'interno delle celle della matrice.',
             },
           },
         ],
-      ],
-    },
-    {
-      label: t('Customize: legend & interactive tooltip'),
-      expanded: true,
-      controlSetRows: [
+        [
+          {
+            name: 'valueFontSize',
+            config: {
+              type: 'SliderControl',
+              label: 'Dimensione font valori (px)',
+              default: 11,
+              min: 8,
+              max: 24,
+              step: 1,
+              renderTrigger: true,
+              visibility: ({ controls }: ControlPanelsContainerProps) =>
+                controls?.showValues?.value !== false,
+              description:
+                'Dimensione del testo numerico nelle celle in pixel. Esempio: 11.',
+            },
+          },
+          {
+            name: 'showZeroValues',
+            config: {
+              type: 'CheckboxControl',
+              label: 'Mostra "0" sulle celle vuote',
+              default: false,
+              renderTrigger: true,
+              visibility: ({ controls }: ControlPanelsContainerProps) =>
+                controls?.showValues?.value !== false,
+              description:
+                'Scrive lo zero esplicito sulle celle prive di occorrenze invece di lasciarle vuote.',
+            },
+          },
+        ],
+        [
+          {
+            name: 'showSmartAnnotations',
+            config: {
+              type: 'CheckboxControl',
+              label: 'Evidenzia massimo e minimo',
+              default: true,
+              renderTrigger: true,
+              description:
+                'Evidenzia automaticamente la cella con il valore massimo e quella con il minimo (esclusi i totali).',
+            },
+          },
+        ],
+        [
+          {
+            name: 'smartAnnotationStyle',
+            config: {
+              type: 'SelectControl',
+              label: 'Stile indicatore max/min',
+              default: 'pin',
+              clearable: false,
+              renderTrigger: true,
+              visibility: ({ controls }: ControlPanelsContainerProps) =>
+                controls?.showSmartAnnotations?.value !== false,
+              choices: [
+                ['pin', 'Pin sopra la cella (classico)'],
+                ['cell_badge', 'Badge in alto a destra nella cella'],
+                ['none', 'Nessun segno sulle celle'],
+              ],
+              description:
+                'Come segnalare massimo e minimo sulla matrice. Esempio: Badge in alto a destra per celle piccole, oppure Nessun segno insieme al riepilogo in legenda.',
+            },
+          },
+          {
+            name: 'showAnnotationLegend',
+            config: {
+              type: 'CheckboxControl',
+              label: 'Riepilogo max/min in legenda',
+              default: false,
+              renderTrigger: true,
+              visibility: ({ controls }: ControlPanelsContainerProps) =>
+                controls?.showSmartAnnotations?.value !== false,
+              description:
+                'Mostra i valori e le coordinate di massimo e minimo accanto alla legenda colori.',
+            },
+          },
+        ],
+        [
+          {
+            name: 'smartAnnotationThreshold',
+            config: {
+              type: 'TextControl',
+              label: 'Valore minimo per max/min (opzionale)',
+              default: null,
+              renderTrigger: true,
+              visibility: ({ controls }: ControlPanelsContainerProps) =>
+                controls?.showSmartAnnotations?.value !== false,
+              description:
+                'Esclude dal calcolo di massimo e minimo le celle sotto questa soglia. Esempio: 5 per ignorare valori marginali.',
+            },
+          },
+        ],
         [
           {
             name: 'showLegend',
             config: {
               type: 'CheckboxControl',
-              label: t('Show color scale legend bar'),
-              renderTrigger: true,
+              label: 'Mostra barra legenda colori',
               default: true,
-              description: t('Shows the value-to-color gradient reference bar.'),
+              renderTrigger: true,
+              description:
+                'Mostra la barra della scala cromatica dei valori (o la scala dei delta quando le celle sono colorate per scostamento).',
             },
           },
           {
             name: 'legendPosition',
             config: {
               type: 'SelectControl',
-              label: t('Legend position'),
+              label: 'Posizione della legenda',
               default: 'bottom',
-              choices: [
-                ['bottom', t('In Basso (Orizzontale)')],
-                ['top', t('In Alto (Orizzontale)')],
-                ['right', t('Right (vertical)')],
-              ],
+              clearable: false,
               renderTrigger: true,
-              visibility: ({ controls }: { controls: Record<string, any> }) =>
-                Boolean(controls?.showLegend?.value !== false),
-              description: t('Position and alignment of the legend bar.'),
+              visibility: ({ controls }: ControlPanelsContainerProps) =>
+                controls?.showLegend?.value !== false,
+              choices: [
+                ['bottom', 'In basso (orizzontale)'],
+                ['top', 'In alto (orizzontale)'],
+                ['right', 'A destra (verticale)'],
+              ],
+              description:
+                'Posizione della barra legenda intorno alla heatmap. Esempio: In basso.',
+            },
+          },
+        ],
+      ],
+    },
+    {
+      label: 'Interazione',
+      expanded: false,
+      tabOverride: 'customize',
+      description: 'Cross-filtering sui clic e contenuto del tooltip al passaggio del mouse.',
+      controlSetRows: [
+        [
+          {
+            name: 'emitFilter',
+            config: {
+              type: 'CheckboxControl',
+              label: 'Abilita cross-filtering al clic',
+              default: true,
+              renderTrigger: false,
+              description:
+                'Cliccando una cella o un totale emette un filtro verso gli altri grafici della dashboard; un secondo clic lo rimuove.',
             },
           },
         ],
@@ -569,74 +692,11 @@ const config: ControlPanelConfig = {
             name: 'showPercentages',
             config: {
               type: 'CheckboxControl',
-              label: t('Show advanced % in the tooltip'),
-              renderTrigger: true,
+              label: 'Mostra percentuali su riga e colonna nel tooltip',
               default: true,
-              description: t('Shows in the tooltip the % of the row, the % of the column and the % of the total volume.'),
-            },
-          },
-          {
-            name: 'emitFilter',
-            config: {
-              type: 'CheckboxControl',
-              label: t('Enable cross-filtering'),
-              renderTrigger: false,
-              default: true,
-              description: t('Clicking a cell instantly filters the other dashboard charts by X and Y.'),
-            },
-          },
-        ],
-      ],
-    },
-    {
-      label: t('Customize: row & column totals (marginal totals)'),
-      expanded: true,
-      controlSetRows: [
-        [
-          {
-            name: 'showRowTotals',
-            config: {
-              type: 'CheckboxControl',
-              label: t('Show row totals column'),
               renderTrigger: true,
-              default: true,
-              description: t('Adds a summary column on the right with each row\'s total.'),
-            },
-          },
-          {
-            name: 'showColumnTotals',
-            config: {
-              type: 'CheckboxControl',
-              label: t('Show column totals row'),
-              renderTrigger: true,
-              default: true,
-              description: t('Adds a summary row at the bottom with each column\'s total.'),
-            },
-          },
-        ],
-        [
-          {
-            name: 'totalLabel',
-            config: {
-              type: 'TextControl',
-              label: t('Total label'),
-              renderTrigger: true,
-              default: 'Total',
-              description: t('Text shown for the row and column total headers (e.g. Total, Sum).'),
-            },
-          },
-          {
-            name: 'totalAggregation',
-            config: {
-              type: 'SelectControl',
-              label: t('Totals aggregation'),
-              default: 'sum',
-              choices: [
-                ['sum', t('Sum (cumulative total)')],
-                ['avg', t('Average (mean value)')],
-              ],
-              renderTrigger: true,
-              description: t('Aggregation method used to compute the row and column marginal totals.'),
+              description:
+                'Mostra nel tooltip il peso percentuale della cella su riga, colonna e totale complessivo. Esempio: 24,5% della riga.',
             },
           },
         ],

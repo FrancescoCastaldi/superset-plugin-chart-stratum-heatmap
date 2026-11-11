@@ -26,6 +26,36 @@ const COLOR_SCHEMES: Record<string, string[]> = {
 const BIPOLAR_DIVERGING_PALETTE = ['#dc2626', '#f87171', '#fecaca', '#f8fafc', '#a7f3d0', '#34d399', '#059669'];
 const POLARITY_INVERTED_PALETTE = ['#059669', '#34d399', '#a7f3d0', '#f8fafc', '#fecaca', '#f87171', '#dc2626'];
 
+const LEGACY_LABELS = ['Time 1 (reference)', 'Time 2 (comparison)'];
+
+const cleanLabel = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed && !LEGACY_LABELS.includes(trimmed) ? trimmed : undefined;
+};
+
+const dimName = (value: unknown): string => {
+  if (typeof value === 'string') return value.trim();
+  if (value && typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    if (typeof obj.column_name === 'string') return obj.column_name.trim();
+    if (typeof obj.label === 'string') return obj.label.trim();
+  }
+  return '';
+};
+
+const parseOptionalFinite = (value: unknown): number | undefined => {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+  return undefined;
+};
+
 export default function transformProps(chartProps: ChartProps): StratumHeatmapTransformedProps {
   const { width, height, formData, queriesData, hooks, filterState } = chartProps;
   // On a dashboard Superset hands over `formData` in camelCase while the comparison options of this
@@ -34,8 +64,6 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
   const queryData = (queriesData[0]?.data || []) as DataRecord[];
 
   const {
-    xAxisDimension = 'GIORNO_CONTATTO',
-    yAxisDimension = 'ORA_CONTATTO',
     metric,
     visualMapMode = 'continuous' as VisualMapMode,
     piecewiseBuckets = 5,
@@ -78,6 +106,11 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     timeDisplayFormat = 'auto',
     timeFractionDigits = 0,
   } = fd;
+
+  const groupbyArr = Array.isArray((fd as any).groupby) ? (fd as any).groupby : (fd as any).groupby ? [(fd as any).groupby] : [];
+  const pivotColsArr = Array.isArray((fd as any).columns) ? (fd as any).columns : (fd as any).columns ? [(fd as any).columns] : [];
+  const xAxisDimension = dimName(fd.xAxisDimension) || dimName((fd as any).x_axis) || dimName(groupbyArr[0]);
+  const yAxisDimension = dimName(fd.yAxisDimension) || dimName(pivotColsArr[0]) || dimName(groupbyArr[1]);
 
   // A Time metric arrives as text ("00:12:54.425000"), which `Number()` turns into 0: the metric (and the
   // comparison metric with its offset columns) become seconds, and are written back as durations
@@ -167,7 +200,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
   const comparisonIsEmpty = Boolean(compMetricName) && data.every(d => d[compMetricName as string] === null || d[compMetricName as string] === undefined);
   const comparisonName = offsetText
     ? periodTitle(dashboardPeriods.comparisonName, dashboardPeriods.comparisonText, offsetText)
-    : undefined;
+    : periodTitle(dashboardPeriods.comparisonName, dashboardPeriods.comparisonText);
   const comparisonTitle = comparisonIsEmpty ? withNoData(comparisonName, dashboardPeriods.locale) : comparisonName;
 
   // 1. Estrazione categorie uniche (escludendo eventuale etichetta totale da dati grezzi)
@@ -253,12 +286,14 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
   if (minValue === Infinity) minValue = 0;
   if (maxValue === -Infinity) maxValue = 1;
 
-  // Override manuale min/max se specificato
-  if (customMinValue !== undefined && customMinValue !== null && !isNaN(Number(customMinValue))) {
-    minValue = Number(customMinValue);
+  // Override manuale min/max se specificato (stringa vuota/spazi ignorati)
+  const parsedMin = parseOptionalFinite(customMinValue);
+  if (parsedMin !== undefined) {
+    minValue = parsedMin;
   }
-  if (customMaxValue !== undefined && customMaxValue !== null && !isNaN(Number(customMaxValue))) {
-    maxValue = Number(customMaxValue);
+  const parsedMax = parseOptionalFinite(customMaxValue);
+  if (parsedMax !== undefined) {
+    maxValue = parsedMax;
   }
 
   // 5. Risoluzione activeCell da filterState Superset (logica pura in plugin/eventHandlers.ts)
@@ -518,8 +553,14 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     totalAggregation,
     heatmapComparisonMode: heatmap_comparison_mode,
     comparisonMetric: comparison_metric,
-    time1Label: time_1_label || (offsetText ? periodTitle(dashboardPeriods.referenceName, dashboardPeriods.referenceText, referenceRange || undefined) : undefined),
-    time2Label: time_2_label || comparisonTitle,
+    time1Label:
+      cleanLabel(time_1_label) ||
+      periodTitle(
+        dashboardPeriods.referenceName,
+        dashboardPeriods.referenceText,
+        offsetText ? referenceRange || undefined : undefined,
+      ),
+    time2Label: cleanLabel(time_2_label) || comparisonTitle,
     deltaDisplayType: delta_display_type,
     deltaColorScale: delta_color_scale,
     zeroBaselineBadgeLabel: zero_baseline_badge_label,

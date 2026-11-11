@@ -13,9 +13,18 @@ import {
   buildComparisonLabel,
   buildComparisonOverlay,
   comparisonRich,
+  formatDeltaBody,
   hasComparisonData,
   pickComparisonLayout,
 } from './comparisonView';
+
+const escapeHtml = (value: string): string =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 import {
   SMART_ANNOTATION_ICON,
   SmartAnnotation,
@@ -280,22 +289,26 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
     visualMapConfig.seriesIndex = 0;
   }
 
-  // Highlighted comparison: only when the data really carries a comparison.
-  const highlightOn = comparisonHighlight && hasComparisonData(matrixData);
-  const comparisonOverlay = highlightOn
-    ? buildComparisonOverlay({
-        width,
-        showLegend,
-        legendPosition,
-        xAxisPosition,
-        time1Label,
-        time2Label,
-        deltaColorScale,
-        maxAbsDelta,
-        timeFormat,
-        numberFormat,
-      })
-    : null;
+  // Highlighted comparison or cells colored by delta: show the matching delta scale / period header.
+  const hasComp = hasComparisonData(matrixData);
+  const highlightOn = comparisonHighlight && hasComp;
+  const byDelta = deltaColorScale !== 'sequential_standard';
+  const comparisonOverlay =
+    hasComp && (highlightOn || (byDelta && showLegend))
+      ? buildComparisonOverlay({
+          width,
+          showLegend,
+          legendPosition,
+          xAxisPosition,
+          time1Label,
+          time2Label,
+          deltaColorScale,
+          maxAbsDelta,
+          timeFormat,
+          numberFormat,
+          showHeader: highlightOn,
+        })
+      : null;
   if (comparisonOverlay?.hideVisualMap) {
     visualMapConfig.show = false;
   }
@@ -434,13 +447,13 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
           const compFormatted = formatMetricValue(meta.comparisonValue, valueFormatOf(meta), meta.timeFormat);
           let deltaFormatted = '';
           if (meta.isZeroBaseline) {
-            deltaFormatted = '<span style="color: #38bdf8; font-weight: 700;">[Nuovo]</span>';
-          } else if (meta.delta !== undefined && meta.delta !== null) {
-            const deltaSign = meta.delta > 0 ? '+' : '';
-            const pctSign = meta.deltaPercent !== null && meta.deltaPercent !== undefined && meta.deltaPercent > 0 ? '+' : '';
-            const pctText = meta.deltaPercent !== null && meta.deltaPercent !== undefined ? ` (${pctSign}${meta.deltaPercent.toFixed(1)}%)` : '';
-            const deltaColor = meta.delta >= 0 ? '#10b981' : '#f87171';
-            deltaFormatted = `<span style="color: ${deltaColor}; font-weight: 700;">${deltaSign}${formatMetricValue(meta.delta, valueFormatOf(meta), meta.timeFormat)}${pctText}</span>`;
+            deltaFormatted = `<span style="color: #38bdf8; font-weight: 700;">${escapeHtml(zeroBaselineBadgeLabel || 'New')}</span>`;
+          } else {
+            const deltaInfo = formatDeltaBody(meta, deltaDisplayType);
+            if (deltaInfo) {
+              const deltaColor = deltaInfo.tone === 'down' ? '#f87171' : '#10b981';
+              deltaFormatted = `<span style="color: ${deltaColor}; font-weight: 700;">${escapeHtml(deltaInfo.body)}</span>`;
+            }
           }
 
           valueBlock = `
@@ -557,13 +570,11 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
             if (meta && meta.comparisonValue !== undefined && meta.comparisonValue !== null) {
               const valStr = formatMetricValue(rawVal, valueFormatOf(meta), meta.timeFormat);
               if (meta.isZeroBaseline) {
-                return `${valStr}\n[Nuovo]`;
+                return `${valStr}\n${zeroBaselineBadgeLabel || 'New'}`;
               }
-              if (meta.delta !== undefined && meta.delta !== null) {
-                const deltaSign = meta.delta > 0 ? '+' : '';
-                const pctSign = meta.deltaPercent !== null && meta.deltaPercent !== undefined && meta.deltaPercent > 0 ? '+' : '';
-                const pctStr = meta.deltaPercent !== null && meta.deltaPercent !== undefined ? ` (${pctSign}${meta.deltaPercent.toFixed(1)}%)` : '';
-                return `${valStr}\n${deltaSign}${formatMetricValue(meta.delta, valueFormatOf(meta), meta.timeFormat)}${pctStr}`;
+              const deltaInfo = formatDeltaBody(meta, deltaDisplayType);
+              if (deltaInfo) {
+                return `${valStr}\n${deltaInfo.body}`;
               }
             }
 

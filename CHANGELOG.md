@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-11
+
+### Fixed
+- **Legend and cell formatting**: wired `numberFormat`, `timeFormat`, and `height` through `StratumHeatmap` into `buildHeatmapOption` and its `useMemo` dependency array.
+- **Empty custom scale bounds**: blank or whitespace-only `customMinValue` / `customMaxValue` strings are ignored instead of being coerced to `0`.
+- **Normal view badges and deltas**: cell labels and tooltips use `zero_baseline_badge_label` (default `New`) instead of hardcoded `[Nuovo]` and honor `delta_display_type`.
+- **Delta legend consistency**: when cells are colored by delta without the highlighted comparison view, the legend renders the delta scale instead of the value scale.
+- **Automatic period labels**: default `Time 1 (reference)` and `Time 2 (comparison)` values are treated as automatic so Calendar Filter period names emerge without overriding.
+- **Strict dimension defaults and validators**: removed project-specific `GIORNO_CONTATTO` / `ORA_CONTATTO` fallback dimensions and added required validators on X axis, Y axis, and metric.
+- Added control panel layout, validator, progressive disclosure, wiring, and default-parity tests (`test/controlPanel.test.ts`).
+
+### Changed
+- **Italian StratumBar-aligned control panel**: reorganized into 6 Italian sections (`Dati` expanded by default, `Confronto tra periodi`, `Formato dei valori`, `Totali`, `Aspetto`, `Interazione`), with progressive disclosure, shared `showDurationControl` for customized duration settings, at most 2 controls per row, split annotation rows, and zero emojis.
+- **Comparison controls metadata**: relabeled `period_column` mode to "Colonne di confronto gia nei dati" (without altering saved chart values) and set `heatmap_comparison_mode` `renderTrigger: false` since switching mode changes the backend query.
+
 ## [0.7.1] - 2026-11-11
 
 ### Fixed

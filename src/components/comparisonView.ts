@@ -78,18 +78,14 @@ export const valueFormatOf = (meta?: { numberFormat?: string }): string => meta?
 const signed = (n: number, time?: TimeFormatOptions, format = 'SMART_NUMBER'): string =>
   `${n > 0 ? '+' : n < 0 ? '-' : ''}${formatMetricValue(Math.abs(n), format, time)}`;
 
-/** Text of the pill under the value: `▲ +123 (+12.3%)`, `▼ -4`, `= 0`, or the new-cell label. */
-export function describeDelta(
+/** Formats signed change + percent without direction arrow, shared by pill and normal view. */
+export function formatDeltaBody(
   meta: HeatmapCellData,
   deltaDisplayType: DeltaDisplayType = 'both',
-  zeroBaselineBadgeLabel = 'New',
-): { text: string; tone: 'up' | 'down' | 'flat' | 'fresh' } | null {
-  if (meta.comparisonValue === undefined || meta.comparisonValue === null) return null;
-  if (meta.isZeroBaseline) return { text: zeroBaselineBadgeLabel, tone: 'fresh' };
+): { body: string; tone: 'up' | 'down' | 'flat' } | null {
   if (meta.delta === undefined || meta.delta === null) return null;
 
   const tone = meta.delta > 0 ? 'up' : meta.delta < 0 ? 'down' : 'flat';
-  const arrow = tone === 'up' ? '▲' : tone === 'down' ? '▼' : '=';
   const absolute = signed(meta.delta, meta.timeFormat, valueFormatOf(meta));
   const percent =
     meta.deltaPercent !== null && meta.deltaPercent !== undefined
@@ -100,7 +96,22 @@ export function describeDelta(
   if (deltaDisplayType === 'absolute' || !percent) body = absolute;
   else if (deltaDisplayType === 'percentage') body = percent;
   else body = `${absolute} (${percent})`;
-  return { text: tone === 'flat' ? `= ${body}` : `${arrow} ${body}`, tone };
+  return { body, tone };
+}
+
+/** Text of the pill under the value: `▲ +123 (+12.3%)`, `▼ -4`, `= 0`, or the new-cell label. */
+export function describeDelta(
+  meta: HeatmapCellData,
+  deltaDisplayType: DeltaDisplayType = 'both',
+  zeroBaselineBadgeLabel = 'New',
+): { text: string; tone: 'up' | 'down' | 'flat' | 'fresh' } | null {
+  if (meta.comparisonValue === undefined || meta.comparisonValue === null) return null;
+  if (meta.isZeroBaseline) return { text: zeroBaselineBadgeLabel, tone: 'fresh' };
+
+  const formatted = formatDeltaBody(meta, deltaDisplayType);
+  if (!formatted) return null;
+  const arrow = formatted.tone === 'up' ? '▲' : formatted.tone === 'down' ? '▼' : '=';
+  return { text: formatted.tone === 'flat' ? `= ${formatted.body}` : `${arrow} ${formatted.body}`, tone: formatted.tone };
 }
 
 export type ComparisonLayout = 'stacked' | 'inline' | 'compact';
@@ -143,6 +154,7 @@ export interface ComparisonOverlayParams {
   maxAbsDelta: number;
   timeFormat?: TimeFormatOptions;
   numberFormat?: string;
+  showHeader?: boolean;
 }
 
 export interface ComparisonOverlay {
@@ -172,6 +184,7 @@ export function buildComparisonOverlay({
   maxAbsDelta,
   timeFormat,
   numberFormat,
+  showHeader = true,
 }: ComparisonOverlayParams): ComparisonOverlay {
   const byDelta = deltaColorScale !== 'sequential_standard';
   const scaleOnTop = showLegend && legendPosition === 'top';
@@ -179,21 +192,25 @@ export function buildComparisonOverlay({
   const comparison = time2Label || 'Comparison';
   const graphic: any[] = [];
 
-  // Header on the edge opposite to the scale.
-  const headerText = `${reference}  vs  ${comparison}      ▲ up   ▼ down`;
-  const headerEdge = scaleOnTop ? { bottom: 6 } : { top: 6 };
-  graphic.push({
-    type: 'text',
-    z: 100,
-    silent: true,
-    left: 'center',
-    ...headerEdge,
-    style: { text: headerText, fontSize: FONT, fontWeight: 700, fill: '#334155' },
-  });
+  if (showHeader) {
+    // Header on the edge opposite to the scale.
+    const headerText = `${reference}  vs  ${comparison}      ▲ up   ▼ down`;
+    const headerEdge = scaleOnTop ? { bottom: 6 } : { top: 6 };
+    graphic.push({
+      type: 'text',
+      z: 100,
+      silent: true,
+      left: 'center',
+      ...headerEdge,
+      style: { text: headerText, fontSize: FONT, fontWeight: 700, fill: '#334155' },
+    });
+  }
   // Axis labels at the bottom already clear their own margin; on top the header needs its own row.
   const headerNeedsRoom = scaleOnTop ? true : xAxisPosition === 'bottom';
-  const extraTop = !scaleOnTop && headerNeedsRoom ? 18 : 0;
-  const extraBottom = scaleOnTop ? 20 : 0;
+  const extraTop = showHeader && !scaleOnTop && headerNeedsRoom ? 18 : 0;
+  const extraBottom =
+    (showHeader && scaleOnTop ? 20 : 0) +
+    (byDelta && showLegend && legendPosition === 'right' ? 40 : 0);
 
   if (byDelta && showLegend) {
     const [negative, positive] = deltaColorScale === 'polarity_inverted' ? INVERTED_ENDS : BIPOLAR_ENDS;

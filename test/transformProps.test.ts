@@ -450,5 +450,70 @@ describe('transformProps', () => {
     expect(cell.value[3].deltaPercent).toBeNull();
     expect(cell.value[3].isZeroBaseline).toBe(false);
   });
+
+  it('ignores blank customMinValue/customMaxValue instead of coercing them to 0, while respecting explicit zero', () => {
+    const blank = transformProps({
+      ...defaultChartProps,
+      formData: {
+        ...defaultChartProps.formData,
+        customMinValue: '',
+        customMaxValue: '   ',
+      },
+      queriesData: [{ data: sampleData }],
+    } as unknown as ChartProps);
+    expect(blank.minValue).toBe(10);
+    expect(blank.maxValue).toBe(40);
+
+    const zeroMin = transformProps({
+      ...defaultChartProps,
+      formData: {
+        ...defaultChartProps.formData,
+        customMinValue: '0',
+        customMaxValue: 0,
+      },
+      queriesData: [{ data: sampleData }],
+    } as unknown as ChartProps);
+    expect(zeroMin.minValue).toBe(0);
+    expect(zeroMin.maxValue).toBe(0);
+  });
+
+  it('treats legacy Time 1 / Time 2 default labels as automatic so Calendar Filter names emerge', () => {
+    const transformed = transformProps({
+      ...defaultChartProps,
+      formData: {
+        ...defaultChartProps.formData,
+        heatmap_comparison_mode: 'time_offsets',
+        time_1_label: 'Time 1 (reference)',
+        time_2_label: 'Time 2 (comparison)',
+        extra_form_data: {
+          time_range: '2026-01-01 : 2026-02-01',
+          custom_form_data: [
+            {
+              period_labels: { reference: 'Gen 2026', comparison: 'Gen 2025' },
+              period_text: { reference: '1-31 gen 2026', comparison: '1-31 gen 2025' },
+            },
+          ],
+        },
+      },
+      queriesData: [{ data: [{ GIORNO: 'Lunedì', ORA: '08:00', CONTEGGIO: 5, 'CONTEGGIO__1 year ago': 4 }] }],
+    } as unknown as ChartProps);
+    expect(transformed.time1Label).toBe('Gen 2026 · 1-31 gen 2026');
+    expect(transformed.time2Label).toBe('Gen 2025 · 1-31 gen 2025');
+  });
+
+  it('does not inject project-specific GIORNO_CONTATTO/ORA_CONTATTO fallbacks when dimensions are omitted', () => {
+    const transformed = transformProps({
+      width: 800,
+      height: 600,
+      formData: {
+        datasource: '1__table',
+        viz_type: 'stratum_heatmap',
+        metric: 'CONTEGGIO',
+      },
+      queriesData: [{ data: [{ X_COL: 'A', Y_COL: 'B', CONTEGGIO: 10 }] }],
+    } as unknown as ChartProps);
+    expect(transformed.xAxisDimension).toBe('');
+    expect(transformed.yAxisDimension).toBe('');
+  });
 });
 
