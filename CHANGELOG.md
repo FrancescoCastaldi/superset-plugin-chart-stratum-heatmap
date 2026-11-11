@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-11
+
+### Added
+- **Number format control** (`numberFormat`, always visible in the Data section): the values of the cells, the totals, the legend scale, the tooltips, the change between two periods and the Max/Min annotations can be written as a percentage, an integer, with decimals, with thousands and so on (any D3 format, as in the other Stratum charts). Until now the heatmap always used the automatic format, and the only format control in the panel was the one for durations. The default is the automatic format, so saved charts look as before.
+
+### Changed
+- The duration format is now an addition to the number format, not a replacement: its controls show up only when the metric looks like a Time field, and only a metric whose values are all times is written as a duration. Any other metric keeps the number format.
+
 ## [0.6.0] - 2026-11-11
 
 ### Added

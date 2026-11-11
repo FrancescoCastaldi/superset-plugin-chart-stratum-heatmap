@@ -74,6 +74,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     delta_display_type = 'both',
     delta_color_scale = 'bipolar_diverging',
     zero_baseline_badge_label = 'New',
+    numberFormat = 'SMART_NUMBER',
     timeDisplayFormat = 'auto',
     timeFractionDigits = 0,
   } = fd;
@@ -104,7 +105,9 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
       referenceSeconds,
     };
   }
-  const metaFormat = timeFormat ? { timeFormat } : {};
+  // A format other than the automatic one travels with every cell, for the tooltips and the labels
+  const customNumberFormat = numberFormat && numberFormat !== 'SMART_NUMBER' ? { numberFormat } : {};
+  const metaFormat = { ...(timeFormat ? { timeFormat } : {}), ...customNumberFormat };
 
   // 'legend' is the style value of 0.3.0: no mark on the cells, legend on.
   const smartAnnotationStyle = rawAnnotationStyle === 'legend' ? 'none' : rawAnnotationStyle;
@@ -292,7 +295,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
         xIndex: xIdx,
         yIndex: yIdx,
         value: val,
-        formattedValue: formatMetricValue(val, 'SMART_NUMBER', timeFormat),
+        formattedValue: formatMetricValue(val, numberFormat, timeFormat),
         rowTotal: rTot,
         colTotal: cTot,
         grandTotal,
@@ -359,7 +362,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
         xIndex: totalXIdx,
         yIndex: yIdx,
         value: val,
-        formattedValue: formatMetricValue(val, 'SMART_NUMBER', timeFormat),
+        formattedValue: formatMetricValue(val, numberFormat, timeFormat),
         rowTotal: sumVal,
         colTotal: 0,
         grandTotal,
@@ -401,7 +404,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
         xIndex: xIdx,
         yIndex: totalYIdx,
         value: val,
-        formattedValue: formatMetricValue(val, 'SMART_NUMBER', timeFormat),
+        formattedValue: formatMetricValue(val, numberFormat, timeFormat),
         rowTotal: 0,
         colTotal: sumVal,
         grandTotal,
@@ -443,7 +446,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
       xIndex: totalXIdx,
       yIndex: totalYIdx,
       value: val,
-      formattedValue: formatMetricValue(val, 'SMART_NUMBER', timeFormat),
+      formattedValue: formatMetricValue(val, numberFormat, timeFormat),
       rowTotal: grandTotal,
       colTotal: grandTotal,
       grandTotal,
@@ -523,6 +526,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     deltaMin: -maxAbsDelta,
     deltaMax: maxAbsDelta,
     ...(timeFormat ? { timeFormat } : {}),
+    ...customNumberFormat,
     gridMapT1: gridMap,
     gridMapT2: compGridMap,
     onCellClick,

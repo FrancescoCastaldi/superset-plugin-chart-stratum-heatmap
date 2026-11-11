@@ -8,6 +8,7 @@
 import { DeltaColorScale, DeltaDisplayType, HeatmapCellData, HeatmapDatum, VisualMapMode } from '../types';
 import { formatPercentage, formatMetricValue } from '../utils/formatting';
 import { formatDuration, TimeFormatOptions } from '../utils/timeValues';
+import { valueFormatOf } from './comparisonView';
 import {
   buildComparisonLabel,
   buildComparisonOverlay,
@@ -55,6 +56,8 @@ export interface HeatmapOptionParams {
   zeroBaselineBadgeLabel?: string;
   /** Set when the metric is a Time: values are seconds and are written as durations */
   timeFormat?: TimeFormatOptions;
+  /** Format chosen for the values (D3 format string); the automatic one when absent */
+  numberFormat?: string;
   /** Chart width in pixels: the legend and the delta scale need it to fit beside the scale. */
   width?: number;
   height?: number;
@@ -103,6 +106,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
     time1Label,
     time2Label,
     timeFormat,
+    numberFormat,
   } = params;
 
   // Configurazione visualMap (Continua vs Piecewise) con fix dimension = 2
@@ -131,11 +135,16 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
     if (timeFormat) {
       visualMapConfig.formatter = (min: number, max: number) =>
         `${formatDuration(Number(min), timeFormat)} - ${formatDuration(Number(max), timeFormat)}`;
+    } else if (numberFormat) {
+      visualMapConfig.formatter = (min: number, max: number) =>
+        `${formatMetricValue(Number(min), numberFormat)} - ${formatMetricValue(Number(max), numberFormat)}`;
     }
   } else {
     visualMapConfig.type = 'continuous';
     if (timeFormat) {
       visualMapConfig.formatter = (value: number) => formatDuration(Number(value), timeFormat);
+    } else if (numberFormat) {
+      visualMapConfig.formatter = (value: number) => formatMetricValue(Number(value), numberFormat);
     }
   }
 
@@ -284,6 +293,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
         deltaColorScale,
         maxAbsDelta,
         timeFormat,
+        numberFormat,
       })
     : null;
   if (comparisonOverlay?.hideVisualMap) {
@@ -326,7 +336,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
           const isMax = params.data?.name === 'Max';
           const badgeTitle = isMax ? '🏆 Maximum value' : '📉 Minimum value';
           const meta: HeatmapCellData | undefined = params.data?.meta;
-          const valStr = meta?.formattedValue || formatMetricValue(params.data?.value, 'SMART_NUMBER', meta?.timeFormat);
+          const valStr = meta?.formattedValue || formatMetricValue(params.data?.value, valueFormatOf(meta), meta?.timeFormat);
           const cellTitle = meta ? `${meta.xValue} × ${meta.yValue}` : '';
           return `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-width: 150px;">
@@ -421,7 +431,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
         `;
 
         if (meta.comparisonValue !== undefined && meta.comparisonValue !== null) {
-          const compFormatted = formatMetricValue(meta.comparisonValue, 'SMART_NUMBER', meta.timeFormat);
+          const compFormatted = formatMetricValue(meta.comparisonValue, valueFormatOf(meta), meta.timeFormat);
           let deltaFormatted = '';
           if (meta.isZeroBaseline) {
             deltaFormatted = '<span style="color: #38bdf8; font-weight: 700;">[Nuovo]</span>';
@@ -430,7 +440,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
             const pctSign = meta.deltaPercent !== null && meta.deltaPercent !== undefined && meta.deltaPercent > 0 ? '+' : '';
             const pctText = meta.deltaPercent !== null && meta.deltaPercent !== undefined ? ` (${pctSign}${meta.deltaPercent.toFixed(1)}%)` : '';
             const deltaColor = meta.delta >= 0 ? '#10b981' : '#f87171';
-            deltaFormatted = `<span style="color: ${deltaColor}; font-weight: 700;">${deltaSign}${formatMetricValue(meta.delta, 'SMART_NUMBER', meta.timeFormat)}${pctText}</span>`;
+            deltaFormatted = `<span style="color: ${deltaColor}; font-weight: 700;">${deltaSign}${formatMetricValue(meta.delta, valueFormatOf(meta), meta.timeFormat)}${pctText}</span>`;
           }
 
           valueBlock = `
@@ -545,7 +555,7 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
             }
 
             if (meta && meta.comparisonValue !== undefined && meta.comparisonValue !== null) {
-              const valStr = formatMetricValue(rawVal, 'SMART_NUMBER', meta.timeFormat);
+              const valStr = formatMetricValue(rawVal, valueFormatOf(meta), meta.timeFormat);
               if (meta.isZeroBaseline) {
                 return `${valStr}\n[Nuovo]`;
               }
@@ -553,12 +563,12 @@ export function buildHeatmapOption(params: HeatmapOptionParams): any {
                 const deltaSign = meta.delta > 0 ? '+' : '';
                 const pctSign = meta.deltaPercent !== null && meta.deltaPercent !== undefined && meta.deltaPercent > 0 ? '+' : '';
                 const pctStr = meta.deltaPercent !== null && meta.deltaPercent !== undefined ? ` (${pctSign}${meta.deltaPercent.toFixed(1)}%)` : '';
-                return `${valStr}\n${deltaSign}${formatMetricValue(meta.delta, 'SMART_NUMBER', meta.timeFormat)}${pctStr}`;
+                return `${valStr}\n${deltaSign}${formatMetricValue(meta.delta, valueFormatOf(meta), meta.timeFormat)}${pctStr}`;
               }
             }
 
             if (rawVal === 0) return showZeroValues ? '0' : '';
-            return formatMetricValue(rawVal, 'SMART_NUMBER', meta?.timeFormat);
+            return formatMetricValue(rawVal, valueFormatOf(meta), meta?.timeFormat);
           },
           fontSize: valueFontSize || 11,
           fontWeight: 600,

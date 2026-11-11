@@ -72,8 +72,11 @@ export function hasComparisonData(matrixData: any[]): boolean {
   });
 }
 
-const signed = (n: number, time?: TimeFormatOptions): string =>
-  `${n > 0 ? '+' : n < 0 ? '-' : ''}${formatMetricValue(Math.abs(n), 'SMART_NUMBER', time)}`;
+/** Format chosen for the values of a cell (D3 format string); the automatic one when none */
+export const valueFormatOf = (meta?: { numberFormat?: string }): string => meta?.numberFormat || 'SMART_NUMBER';
+
+const signed = (n: number, time?: TimeFormatOptions, format = 'SMART_NUMBER'): string =>
+  `${n > 0 ? '+' : n < 0 ? '-' : ''}${formatMetricValue(Math.abs(n), format, time)}`;
 
 /** Text of the pill under the value: `▲ +123 (+12.3%)`, `▼ -4`, `= 0`, or the new-cell label. */
 export function describeDelta(
@@ -87,7 +90,7 @@ export function describeDelta(
 
   const tone = meta.delta > 0 ? 'up' : meta.delta < 0 ? 'down' : 'flat';
   const arrow = tone === 'up' ? '▲' : tone === 'down' ? '▼' : '=';
-  const absolute = signed(meta.delta, meta.timeFormat);
+  const absolute = signed(meta.delta, meta.timeFormat, valueFormatOf(meta));
   const percent =
     meta.deltaPercent !== null && meta.deltaPercent !== undefined
       ? `${meta.deltaPercent > 0 ? '+' : ''}${meta.deltaPercent.toFixed(1)}%`
@@ -119,7 +122,7 @@ export function buildComparisonLabel(
   zeroBaselineBadgeLabel?: string,
   layout: ComparisonLayout = 'stacked',
 ): string {
-  const valueText = formatMetricValue(value, 'SMART_NUMBER', meta.timeFormat);
+  const valueText = formatMetricValue(value, valueFormatOf(meta), meta.timeFormat);
   const delta = describeDelta(meta, deltaDisplayType, zeroBaselineBadgeLabel);
   if (!delta) return `{v|${valueText}}`;
   if (layout === 'compact') {
@@ -139,6 +142,7 @@ export interface ComparisonOverlayParams {
   deltaColorScale?: DeltaColorScale;
   maxAbsDelta: number;
   timeFormat?: TimeFormatOptions;
+  numberFormat?: string;
 }
 
 export interface ComparisonOverlay {
@@ -167,6 +171,7 @@ export function buildComparisonOverlay({
   deltaColorScale = 'bipolar_diverging',
   maxAbsDelta,
   timeFormat,
+  numberFormat,
 }: ComparisonOverlayParams): ComparisonOverlay {
   const byDelta = deltaColorScale !== 'sequential_standard';
   const scaleOnTop = showLegend && legendPosition === 'top';
@@ -194,7 +199,7 @@ export function buildComparisonOverlay({
     const [negative, positive] = deltaColorScale === 'polarity_inverted' ? INVERTED_ENDS : BIPOLAR_ENDS;
     const barEdge = scaleOnTop ? { top: 24 } : { bottom: 14 };
     const labelEdge = scaleOnTop ? { top: 8 } : { bottom: 28 };
-    const bound = formatMetricValue(maxAbsDelta, 'SMART_NUMBER', timeFormat);
+    const bound = formatMetricValue(maxAbsDelta, numberFormat || 'SMART_NUMBER', timeFormat);
     graphic.push(
       {
         type: 'rect',

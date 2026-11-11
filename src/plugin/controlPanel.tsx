@@ -52,6 +52,20 @@ const config: ControlPanelConfig = {
         ],
         [
           {
+            name: 'numberFormat',
+            config: {
+              ...sharedControls.y_axis_format,
+              label: t('Number format'),
+              default: 'SMART_NUMBER',
+              renderTrigger: true,
+              description: t(
+                'How the values are written in the cells, the totals, the legend and the tooltips: percentage, integer, decimals, thousands... Percentage formats expect a ratio (0.12 is shown as 12%). It does not apply to a metric of type Time, which is written with the duration format.',
+              ),
+            },
+          },
+        ],
+        [
+          {
             name: 'timeDisplayFormat',
             config: {
               type: 'SelectControl',
@@ -69,7 +83,7 @@ const config: ControlPanelConfig = {
                 ['seconds', t('Seconds (3930 s)')],
               ],
               description: t(
-                'A metric of type Time (hh:mm:ss, for example an average waiting time) is read automatically and written as a duration in the cells, the legend and the tooltips. The totals of a Time metric are the average of the cells with data, whatever the totals aggregation says.',
+                'Only for a metric of type Time (hh:mm:ss, for example an average waiting time): it is read automatically and written as a duration in the cells, the legend and the tooltips, instead of with the number format. Other metrics keep the number format. The totals of a Time metric are the average of the cells with data, whatever the totals aggregation says.',
               ),
             },
           },

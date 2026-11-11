@@ -56,6 +56,8 @@ export interface StratumHeatmapFormData extends QueryFormData {
   xAxisSortAsc?: boolean;
   nullValueColor?: string;
   zeroValueColor?: string;
+  /** Format of the values (D3 format string); `SMART_NUMBER` when not chosen */
+  numberFormat?: string;
   // Time and duration metric
   timeDisplayFormat?: TimeDisplayFormat;
   timeFractionDigits?: number | string;
@@ -83,6 +85,8 @@ export interface HeatmapCellData {
   isZeroBaseline?: boolean;
   /** Set when the metric is a Time: the values are seconds and are written as durations */
   timeFormat?: TimeFormatOptions;
+  /** Format chosen for the values; absent for the automatic one */
+  numberFormat?: string;
 }
 
 export interface StratumHeatmapChartProps extends ChartProps {
@@ -154,6 +158,8 @@ export interface StratumHeatmapTransformedProps {
   deltaMax?: number;
   /** Set when the metric is a Time: the values are seconds and are written as durations */
   timeFormat?: TimeFormatOptions;
+  /** Format chosen for the values; absent for the automatic one */
+  numberFormat?: string;
   gridMapT1?: Map<string, number | null>;
   gridMapT2?: Map<string, number | null>;
   onCellClick?: (filter: { col: string; op: 'IN'; val: string[] }[]) => void;
