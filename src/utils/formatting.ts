@@ -1,9 +1,17 @@
 import { format as d3Format } from 'd3-format';
+import { formatDuration, TimeFormatOptions } from './timeValues';
 
-export function formatMetricValue(value: number | null | undefined, formatString = '~s'): string {
+/** `time` set: the values are seconds of a Time metric and are written as a duration */
+export function formatMetricValue(
+  value: number | null | undefined,
+  formatString = '~s',
+  time?: TimeFormatOptions,
+): string {
   if (value === null || value === undefined || isNaN(value)) {
     return '—';
   }
+
+  if (time) return formatDuration(value, time);
 
   try {
     if (formatString === 'SMART_NUMBER') {

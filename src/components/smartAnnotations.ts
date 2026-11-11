@@ -49,7 +49,7 @@ export function describeAnnotation(annotation: SmartAnnotation): string {
   const cell = [annotation.meta?.yValue, annotation.meta?.xValue]
     .filter(part => part !== undefined && part !== null && String(part) !== '')
     .join(' · ');
-  const value = formatMetricValue(annotation.value, 'SMART_NUMBER');
+  const value = formatMetricValue(annotation.value, 'SMART_NUMBER', annotation.meta?.timeFormat);
   const where = cell ? `${cell} (${value})` : value;
   return `${SMART_ANNOTATION_ICON[annotation.name]} ${ANNOTATION_LABEL[annotation.name]}: ${where}`;
 }

@@ -9,6 +9,7 @@ import {
 } from '../types';
 import { smartSortCategories } from '../utils/sorters';
 import { formatMetricValue } from '../utils/formatting';
+import { convertTimeColumns, TimeFormatOptions } from '../utils/timeValues';
 import { getOptimalTextColor, interpolateColor } from '../utils/contrast';
 import {
   createCellClickHandler,
@@ -30,7 +31,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
   // On a dashboard Superset hands over `formData` in camelCase while the comparison options of this
   // chart are read in snake_case: `rawFormData` keeps the names typed in the control panel
   const fd = { ...((chartProps as any).rawFormData || {}), ...formData } as StratumHeatmapFormData;
-  const data = (queriesData[0]?.data || []) as DataRecord[];
+  const queryData = (queriesData[0]?.data || []) as DataRecord[];
 
   const {
     xAxisDimension = 'GIORNO_CONTATTO',
@@ -73,7 +74,37 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     delta_display_type = 'both',
     delta_color_scale = 'bipolar_diverging',
     zero_baseline_badge_label = 'New',
+    timeDisplayFormat = 'auto',
+    timeFractionDigits = 0,
   } = fd;
+
+  // A Time metric arrives as text ("00:12:54.425000"), which `Number()` turns into 0: the metric (and the
+  // comparison metric with its offset columns) become seconds, and are written back as durations
+  const labelOf = (m: any): string =>
+    typeof m === 'string' ? m : m?.label || m?.column?.column_name || '';
+  const timeLabels = [labelOf(metric), labelOf(comparison_metric)].filter(Boolean);
+  const firstRowKeys = Object.keys(queryData[0] || {});
+  const { rows: data, timeKeys } = convertTimeColumns(queryData, [
+    ...timeLabels,
+    ...firstRowKeys.filter(k => timeLabels.some(m => k.startsWith(`${m}__`))),
+  ]);
+  const isTimeMetric = timeKeys.some(k => k.toLowerCase() === labelOf(metric).toLowerCase());
+  let timeFormat: TimeFormatOptions | undefined;
+  if (isTimeMetric) {
+    let referenceSeconds = 0;
+    for (const row of data) {
+      for (const k of timeKeys) {
+        const v = row[k];
+        if (typeof v === 'number' && Math.abs(v) > referenceSeconds) referenceSeconds = Math.abs(v);
+      }
+    }
+    timeFormat = {
+      format: timeDisplayFormat,
+      fractionDigits: Math.min(3, Math.max(0, Math.round(Number(timeFractionDigits)) || 0)),
+      referenceSeconds,
+    };
+  }
+  const metaFormat = timeFormat ? { timeFormat } : {};
 
   // 'legend' is the style value of 0.3.0: no mark on the cells, legend on.
   const smartAnnotationStyle = rawAnnotationStyle === 'legend' ? 'none' : rawAnnotationStyle;
@@ -172,6 +203,10 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
   const compGridMap = new Map<string, number>();
   const rowTotals = new Map<string, number>();
   const colTotals = new Map<string, number>();
+  // Cells with data per row and column: the totals of a Time metric are their average
+  const rowCounts = new Map<string, number>();
+  const colCounts = new Map<string, number>();
+  let cellCount = 0;
   let grandTotal = 0;
   let minValue = Infinity;
   let maxValue = -Infinity;
@@ -202,6 +237,9 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
 
     rowTotals.set(yVal, (rowTotals.get(yVal) || 0) + val);
     colTotals.set(xVal, (colTotals.get(xVal) || 0) + val);
+    rowCounts.set(yVal, (rowCounts.get(yVal) || 0) + 1);
+    colCounts.set(xVal, (colCounts.get(xVal) || 0) + 1);
+    cellCount += 1;
     grandTotal += val;
 
     // FONDAMENTALE: la scala colori si calcola SOLO sui valori reali delle celle
@@ -254,7 +292,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
         xIndex: xIdx,
         yIndex: yIdx,
         value: val,
-        formattedValue: formatMetricValue(val, 'SMART_NUMBER'),
+        formattedValue: formatMetricValue(val, 'SMART_NUMBER', timeFormat),
         rowTotal: rTot,
         colTotal: cTot,
         grandTotal,
@@ -265,6 +303,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
         delta,
         deltaPercent,
         isZeroBaseline,
+        ...metaFormat,
       };
 
       let cellBg: string;
@@ -309,7 +348,10 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     const totalXIdx = dataXCount;
     yCategoriesSorted.forEach((yVal, yIdx) => {
       const sumVal = rowTotals.get(yVal) || 0;
-      const val = totalAggregation === 'avg' ? (dataXCount > 0 ? sumVal / dataXCount : 0) : sumVal;
+      // The total of a Time metric is the average of the cells with data: a sum of times means nothing
+      const val = timeFormat
+        ? (rowCounts.get(yVal) ? sumVal / (rowCounts.get(yVal) as number) : 0)
+        : totalAggregation === 'avg' ? (dataXCount > 0 ? sumVal / dataXCount : 0) : sumVal;
 
       const cellMeta: HeatmapCellData = {
         xValue: totalLabel,
@@ -317,7 +359,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
         xIndex: totalXIdx,
         yIndex: yIdx,
         value: val,
-        formattedValue: formatMetricValue(val, 'SMART_NUMBER'),
+        formattedValue: formatMetricValue(val, 'SMART_NUMBER', timeFormat),
         rowTotal: sumVal,
         colTotal: 0,
         grandTotal,
@@ -325,6 +367,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
         colPercentage: 0,
         totalPercentage: grandTotal > 0 ? (sumVal / grandTotal) * 100 : 0,
         isRowTotal: true,
+        ...metaFormat,
       };
 
       matrixData.push({
@@ -348,7 +391,9 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     const totalYIdx = dataYCount;
     xCategoriesSorted.forEach((xVal, xIdx) => {
       const sumVal = colTotals.get(xVal) || 0;
-      const val = totalAggregation === 'avg' ? (dataYCount > 0 ? sumVal / dataYCount : 0) : sumVal;
+      const val = timeFormat
+        ? (colCounts.get(xVal) ? sumVal / (colCounts.get(xVal) as number) : 0)
+        : totalAggregation === 'avg' ? (dataYCount > 0 ? sumVal / dataYCount : 0) : sumVal;
 
       const cellMeta: HeatmapCellData = {
         xValue: xVal,
@@ -356,7 +401,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
         xIndex: xIdx,
         yIndex: totalYIdx,
         value: val,
-        formattedValue: formatMetricValue(val, 'SMART_NUMBER'),
+        formattedValue: formatMetricValue(val, 'SMART_NUMBER', timeFormat),
         rowTotal: 0,
         colTotal: sumVal,
         grandTotal,
@@ -364,6 +409,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
         colPercentage: 100,
         totalPercentage: grandTotal > 0 ? (sumVal / grandTotal) * 100 : 0,
         isColTotal: true,
+        ...metaFormat,
       };
 
       matrixData.push({
@@ -387,7 +433,9 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     const totalXIdx = dataXCount;
     const totalYIdx = dataYCount;
     const totalCells = dataXCount * dataYCount;
-    const val = totalAggregation === 'avg' ? (totalCells > 0 ? grandTotal / totalCells : 0) : grandTotal;
+    const val = timeFormat
+      ? (cellCount > 0 ? grandTotal / cellCount : 0)
+      : totalAggregation === 'avg' ? (totalCells > 0 ? grandTotal / totalCells : 0) : grandTotal;
 
     const cellMeta: HeatmapCellData = {
       xValue: totalLabel,
@@ -395,7 +443,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
       xIndex: totalXIdx,
       yIndex: totalYIdx,
       value: val,
-      formattedValue: formatMetricValue(val, 'SMART_NUMBER'),
+      formattedValue: formatMetricValue(val, 'SMART_NUMBER', timeFormat),
       rowTotal: grandTotal,
       colTotal: grandTotal,
       grandTotal,
@@ -403,6 +451,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
       colPercentage: 100,
       totalPercentage: 100,
       isGrandTotal: true,
+      ...metaFormat,
     };
 
     matrixData.push({
@@ -473,6 +522,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     zeroBaselineBadgeLabel: zero_baseline_badge_label,
     deltaMin: -maxAbsDelta,
     deltaMax: maxAbsDelta,
+    ...(timeFormat ? { timeFormat } : {}),
     gridMapT1: gridMap,
     gridMapT2: compGridMap,
     onCellClick,

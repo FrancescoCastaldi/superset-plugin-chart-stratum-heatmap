@@ -7,6 +7,7 @@
  */
 import { DeltaColorScale, DeltaDisplayType, HeatmapCellData } from '../types';
 import { formatMetricValue } from '../utils/formatting';
+import type { TimeFormatOptions } from '../utils/timeValues';
 
 // Same end points as the diverging palettes of transformProps: [negative, positive].
 const BIPOLAR_ENDS: [string, string] = ['#dc2626', '#059669'];
@@ -71,7 +72,8 @@ export function hasComparisonData(matrixData: any[]): boolean {
   });
 }
 
-const signed = (n: number): string => `${n > 0 ? '+' : n < 0 ? '-' : ''}${formatMetricValue(Math.abs(n), 'SMART_NUMBER')}`;
+const signed = (n: number, time?: TimeFormatOptions): string =>
+  `${n > 0 ? '+' : n < 0 ? '-' : ''}${formatMetricValue(Math.abs(n), 'SMART_NUMBER', time)}`;
 
 /** Text of the pill under the value: `▲ +123 (+12.3%)`, `▼ -4`, `= 0`, or the new-cell label. */
 export function describeDelta(
@@ -85,7 +87,7 @@ export function describeDelta(
 
   const tone = meta.delta > 0 ? 'up' : meta.delta < 0 ? 'down' : 'flat';
   const arrow = tone === 'up' ? '▲' : tone === 'down' ? '▼' : '=';
-  const absolute = signed(meta.delta);
+  const absolute = signed(meta.delta, meta.timeFormat);
   const percent =
     meta.deltaPercent !== null && meta.deltaPercent !== undefined
       ? `${meta.deltaPercent > 0 ? '+' : ''}${meta.deltaPercent.toFixed(1)}%`
@@ -117,7 +119,7 @@ export function buildComparisonLabel(
   zeroBaselineBadgeLabel?: string,
   layout: ComparisonLayout = 'stacked',
 ): string {
-  const valueText = formatMetricValue(value, 'SMART_NUMBER');
+  const valueText = formatMetricValue(value, 'SMART_NUMBER', meta.timeFormat);
   const delta = describeDelta(meta, deltaDisplayType, zeroBaselineBadgeLabel);
   if (!delta) return `{v|${valueText}}`;
   if (layout === 'compact') {
@@ -136,6 +138,7 @@ export interface ComparisonOverlayParams {
   time2Label?: string;
   deltaColorScale?: DeltaColorScale;
   maxAbsDelta: number;
+  timeFormat?: TimeFormatOptions;
 }
 
 export interface ComparisonOverlay {
@@ -163,6 +166,7 @@ export function buildComparisonOverlay({
   time2Label,
   deltaColorScale = 'bipolar_diverging',
   maxAbsDelta,
+  timeFormat,
 }: ComparisonOverlayParams): ComparisonOverlay {
   const byDelta = deltaColorScale !== 'sequential_standard';
   const scaleOnTop = showLegend && legendPosition === 'top';
@@ -190,7 +194,7 @@ export function buildComparisonOverlay({
     const [negative, positive] = deltaColorScale === 'polarity_inverted' ? INVERTED_ENDS : BIPOLAR_ENDS;
     const barEdge = scaleOnTop ? { top: 24 } : { bottom: 14 };
     const labelEdge = scaleOnTop ? { top: 8 } : { bottom: 28 };
-    const bound = formatMetricValue(maxAbsDelta, 'SMART_NUMBER');
+    const bound = formatMetricValue(maxAbsDelta, 'SMART_NUMBER', timeFormat);
     graphic.push(
       {
         type: 'rect',

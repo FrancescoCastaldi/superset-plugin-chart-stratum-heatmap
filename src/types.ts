@@ -3,6 +3,7 @@ import {
   QueryFormData,
   DataRecord,
 } from '@superset-ui/core';
+import type { TimeDisplayFormat, TimeFormatOptions } from './utils/timeValues';
 
 // 'legend' is the value of 0.3.0, kept so that saved charts still read: it means no mark on the cells
 // and the legend on.
@@ -55,6 +56,9 @@ export interface StratumHeatmapFormData extends QueryFormData {
   xAxisSortAsc?: boolean;
   nullValueColor?: string;
   zeroValueColor?: string;
+  // Time and duration metric
+  timeDisplayFormat?: TimeDisplayFormat;
+  timeFractionDigits?: number | string;
 }
 
 export interface HeatmapCellData {
@@ -77,6 +81,8 @@ export interface HeatmapCellData {
   delta?: number | null;
   deltaPercent?: number | null;
   isZeroBaseline?: boolean;
+  /** Set when the metric is a Time: the values are seconds and are written as durations */
+  timeFormat?: TimeFormatOptions;
 }
 
 export interface StratumHeatmapChartProps extends ChartProps {
@@ -146,6 +152,8 @@ export interface StratumHeatmapTransformedProps {
   zeroBaselineBadgeLabel?: string;
   deltaMin?: number;
   deltaMax?: number;
+  /** Set when the metric is a Time: the values are seconds and are written as durations */
+  timeFormat?: TimeFormatOptions;
   gridMapT1?: Map<string, number | null>;
   gridMapT2?: Map<string, number | null>;
   onCellClick?: (filter: { col: string; op: 'IN'; val: string[] }[]) => void;

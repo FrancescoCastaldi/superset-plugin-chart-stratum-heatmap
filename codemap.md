@@ -15,6 +15,8 @@ Plugin matrice heatmap e mappe termiche per analisi saturazione agende CUP, cari
 | Componente | Ruolo Tecnico |
 |:---|:---|
 | Sorgenti / Script | Implementazione della logica di dettaglio |
+| `src/utils/timeValues.ts` | Metriche Time: lettura di `HH:MM:SS.ffffff` e ISO 8601 in secondi, formati di visualizzazione delle durate |
+| `src/plugin/timeMetricHints.ts` | Rileva in Explore se la metrica scelta in Dati e un campo Time, per mostrare i controlli delle durate |
 | Specifiche | Parametri di runtime e configurazioni collegate |
 
 ---

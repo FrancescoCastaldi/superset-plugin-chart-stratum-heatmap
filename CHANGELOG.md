@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.6.0] - 2026-11-11
+
+### Added
+- **Time and duration metrics.** A metric of type Time (SQL Server `time`, an average waiting time such as `00:12:54.425000`) arrives as text and `Number()` turned every cell into `0` without any error. The heatmap now reads the metric (and the comparison metric with its offset columns) as seconds, lays the colour scale out on them and writes cells, totals, legend scale, tooltips, the change between two periods and the Max/Min annotations as durations.
+- Accepted texts: `HH:MM:SS`, `H:MM:SS.ffffff`, more than 24 hours (`26:10:00`), `1 day, 2:03:04`, `0 days 00:12:54.425000` and ISO 8601 durations (`PT12M54S`). Two-part values such as `12:54` are not read (hours and minutes, or minutes and seconds).
+- Controls `timeDisplayFormat` (automatic `mm:ss` or `h:mm:ss`, hours minutes seconds, minutes and seconds, decimal minutes, decimal hours, seconds) and `timeFractionDigits` (0 to 3). They show up on their own, only when the metric picked in the Data section looks like a Time field (a saved metric on a TIME or INTERVAL column, a simple metric on such a column, a custom SQL naming one, or a name such as attesa, durata, tempo, lead time, wait, duration).
+- `test/timeMetrics.test.ts`: 13 tests.
+
+### Changed
+- **The totals of a Time metric are the average of the cells with data**, whatever the totals aggregation says: a sum of waiting times means nothing, and an empty cell must not pull the average down. The totals of every other metric are unchanged.
+- Only the metric columns are converted: a category that looks like a time, such as `08:00:00`, stays text.
+
 ## [0.5.3] - 2026-11-01
 
 ### Changed
