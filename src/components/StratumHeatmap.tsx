@@ -10,7 +10,7 @@ import {
 } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import { StratumHeatmapTransformedProps, HeatmapCellData } from '../types';
-import { buildHeatmapOption } from './buildHeatmapOption';
+import { heatmapOptionFromProps } from './heatmapOption';
 import { buildCellFilterClauses } from '../plugin/eventHandlers';
 
 // MarkPointComponent backs the Max/Min pins, CustomChart the in-cell badges and GraphicComponent
@@ -27,120 +27,13 @@ echarts.use([
 ]);
 
 export default function StratumHeatmap(props: StratumHeatmapTransformedProps) {
-  const {
-    width,
-    height,
-    xCategories,
-    yCategories,
-    matrixData,
-    minValue,
-    maxValue,
-    visualMapMode,
-    piecewiseBuckets = 5,
-    showLegend = true,
-    legendPosition = 'bottom',
-    xAxisPosition = 'top',
-    colorRange,
-    showValues,
-    valueFontSize = 11,
-    showZeroValues = false,
-    zeroCellNeutral = true,
-    showPercentages,
-    showSmartAnnotations = true,
-    smartAnnotationStyle = 'pin',
-    showAnnotationLegend = false,
-    smartAnnotationThreshold,
-    comparisonHighlight = false,
-    deltaDisplayType,
-    deltaColorScale,
-    deltaMax = 0,
-    zeroBaselineBadgeLabel,
-    cellRadius,
-    xAxisDimension,
-    yAxisDimension,
-    activeCell,
-    totalLabel = 'Total',
-    onCellClick,
-    time1Label,
-    time2Label,
-  } = props;
+  const { width, height, activeCell, xAxisDimension, yAxisDimension, totalLabel = 'Total', onCellClick } = props;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<echarts.EChartsType | null>(null);
 
-  // Calcola le opzioni ECharts per il rendering (assembly puro in ./buildHeatmapOption)
-  const option = useMemo(
-    () =>
-      buildHeatmapOption({
-        xCategories,
-        yCategories,
-        matrixData,
-        minValue,
-        maxValue,
-        visualMapMode,
-        piecewiseBuckets,
-        showLegend,
-        legendPosition,
-        xAxisPosition,
-        colorRange,
-        showValues,
-        valueFontSize,
-        showZeroValues,
-        zeroCellNeutral,
-        showPercentages,
-        showSmartAnnotations,
-        smartAnnotationStyle,
-        showAnnotationLegend,
-        smartAnnotationThreshold,
-        comparisonHighlight,
-        deltaDisplayType,
-        deltaColorScale,
-        maxAbsDelta: deltaMax,
-        zeroBaselineBadgeLabel,
-        width,
-        height,
-        cellRadius,
-        activeCell,
-        totalLabel,
-        xAxisDimension,
-        yAxisDimension,
-        time1Label,
-        time2Label,
-      }),
-    [
-      xCategories,
-      yCategories,
-      matrixData,
-      minValue,
-      maxValue,
-      visualMapMode,
-      piecewiseBuckets,
-      showLegend,
-      legendPosition,
-      xAxisPosition,
-      colorRange,
-      showValues,
-      valueFontSize,
-      showZeroValues,
-      zeroCellNeutral,
-      showPercentages,
-      showSmartAnnotations,
-      smartAnnotationStyle,
-      showAnnotationLegend,
-      smartAnnotationThreshold,
-      comparisonHighlight,
-      deltaDisplayType,
-      deltaColorScale,
-      deltaMax,
-      zeroBaselineBadgeLabel,
-      time1Label,
-      time2Label,
-      width,
-      cellRadius,
-      activeCell,
-      totalLabel,
-    ],
-  );
+  // Calcola le opzioni ECharts per il rendering (funzione pura in heatmapOptionFromProps)
+  const option = useMemo(() => heatmapOptionFromProps(props), [props]);
 
   // Inizializzazione istanza ECharts e gestione resize
   useEffect(() => {
