@@ -72,4 +72,23 @@ describe('StratumHeatmap buildQuery', () => {
     const q = (context as any).queries[0];
     expect(q.metrics).toEqual(['count', 'count_conf']);
   });
+
+  it('populates series_columns, series_limit and series_limit_metric when series_limit is set', () => {
+    const formData = {
+      datasource: '1__table',
+      xAxisDimension: 'col_a',
+      yAxisDimension: 'col_b',
+      metric: 'count',
+      series_limit: 10,
+      series_limit_metric: 'count',
+      order_desc: true,
+    } as any as StratumHeatmapFormData;
+
+    const context = buildQuery(formData);
+    const q = (context as any).queries[0];
+    expect(q.series_columns).toEqual(['col_b']);
+    expect(q.series_limit).toBe(10);
+    expect(q.series_limit_metric).toBe('count');
+    expect(q.order_desc).toBe(true);
+  });
 });

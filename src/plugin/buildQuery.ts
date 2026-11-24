@@ -35,6 +35,16 @@ export default function buildQuery(formData: StratumHeatmapFormData): QueryConte
       metrics: resolvedMetrics,
     };
 
+    if (dimY) {
+      const seriesLimit = Number(fd.series_limit ?? 0);
+      if (seriesLimit > 0) {
+        query.series_columns = [dimY];
+        query.series_limit = seriesLimit;
+        query.series_limit_metric = fd.series_limit_metric || resolvedMetrics[0];
+        query.order_desc = fd.order_desc !== false;
+      }
+    }
+
     if (dashboardTimeCompare.length > 0) {
       query.time_offsets = dashboardTimeCompare;
     }

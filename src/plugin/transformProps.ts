@@ -207,9 +207,25 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
   const rawXCategories = Array.from(
     new Set(data.map(d => String(d[xAxisDimension] ?? '(empty)'))),
   ).filter(cat => cat !== totalLabel);
-  const rawYCategories = Array.from(
+  let rawYCategories = Array.from(
     new Set(data.map(d => String(d[yAxisDimension] ?? '(empty)'))),
   ).filter(cat => cat !== totalLabel);
+
+  // Safety cap difensivo: previene compressione illeggibile su Y se arrivano troppe categorie non filtrate
+  const maxSeries = Number(fd.series_limit ?? 0);
+  const effectiveMaxY = maxSeries > 0 ? maxSeries : (rawYCategories.length > 25 ? 15 : 0);
+  if (effectiveMaxY > 0 && rawYCategories.length > effectiveMaxY) {
+    const totalsPerY = new Map<string, number>();
+    for (const d of data) {
+      const yVal = String(d[yAxisDimension] ?? '(empty)');
+      const rawNum = d[metricName];
+      const val = typeof rawNum === 'number' ? rawNum : Number(rawNum) || 0;
+      totalsPerY.set(yVal, (totalsPerY.get(yVal) || 0) + val);
+    }
+    rawYCategories = rawYCategories
+      .sort((a, b) => (totalsPerY.get(b) || 0) - (totalsPerY.get(a) || 0))
+      .slice(0, effectiveMaxY);
+  }
 
   // 2. Ordinamento intelligente o naturale
   const xCategoriesSorted = smartSort
@@ -252,6 +268,7 @@ export default function transformProps(chartProps: ChartProps): StratumHeatmapTr
     const xVal = String(d[xAxisDimension] ?? '(empty)');
     const yVal = String(d[yAxisDimension] ?? '(empty)');
     if (xVal === totalLabel || yVal === totalLabel) return;
+    if (effectiveMaxY > 0 && !rawYCategories.includes(yVal)) return;
 
     const rawNum = d[metricName];
     const val = typeof rawNum === 'number' ? rawNum : Number(rawNum) || 0;

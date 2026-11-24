@@ -111,6 +111,8 @@ const config: ControlPanelConfig = {
         ],
         ['adhoc_filters'],
         ['row_limit'],
+        ['series_limit'],
+        ['series_limit_metric'],
       ],
     },
     {

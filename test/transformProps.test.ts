@@ -515,5 +515,28 @@ describe('transformProps', () => {
     expect(transformed.xAxisDimension).toBe('');
     expect(transformed.yAxisDimension).toBe('');
   });
+
+  it('caps yCategories to top N when series_limit is configured', () => {
+    const multiRowData = [
+      { GIORNO: 'Lunedì', ORA: '08:00', CONTEGGIO: 10 },
+      { GIORNO: 'Lunedì', ORA: '09:00', CONTEGGIO: 50 },
+      { GIORNO: 'Lunedì', ORA: '10:00', CONTEGGIO: 20 },
+      { GIORNO: 'Lunedì', ORA: '11:00', CONTEGGIO: 5 },
+    ];
+
+    const props = {
+      ...defaultChartProps,
+      formData: {
+        ...defaultChartProps.formData,
+        series_limit: 2,
+        smartSort: false,
+      },
+      queriesData: [{ data: multiRowData }],
+    } as unknown as ChartProps;
+
+    const transformed = transformProps(props);
+    // Should keep top 2: 09:00 (50) and 10:00 (20)
+    expect(transformed.yCategories).toEqual(['09:00', '10:00']);
+  });
 });
 

@@ -127,7 +127,7 @@ superset-plugin-chart-stratum-heatmap/
 
 ## 🚀 Quick Installation in Apache Superset
 
-The plugin features an automated installer suite capable of auto-discovering Apache Superset locations (e.g. `D:\Sviluppo\superset`, sibling directories, or user home):
+The plugin features an automated installer suite capable of auto-discovering Apache Superset locations (e.g. `<SSD_DRIVE>:\Actual\03_Sviluppo_Software\Repositories\apache-superset-6.1.0`, sibling directories, or user home):
 
 ### Option 1: Desktop GUI Installer (Recommended for Windows)
 Double-click:
@@ -144,17 +144,17 @@ A desktop interface appears with Superset path auto-detection, a directory brows
 node scripts/install.js
 
 # Or pass path explicitly:
-node scripts/install.js "D:\Sviluppo\superset"
+node scripts/install.js "<SSD_DRIVE>:\Actual\03_Sviluppo_Software\Repositories\apache-superset-6.1.0"
 ```
 
 ### Option 3: PowerShell Script
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/install.ps1 -SupersetPath "D:\Sviluppo\superset"
+powershell -ExecutionPolicy Bypass -File scripts/install.ps1 -SupersetPath "<SSD_DRIVE>:\Actual\03_Sviluppo_Software\Repositories\apache-superset-6.1.0"
 ```
 
 ### Option 4: Python CLI
 ```bash
-python scripts/installer.py --superset-path "D:\Sviluppo\superset"
+python scripts/installer.py --superset-path "<SSD_DRIVE>:\Actual\03_Sviluppo_Software\Repositories\apache-superset-6.1.0"
 ```
 
 Each installer automatically:

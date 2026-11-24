@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-24
+
+### Added
+- **Top N on the Y axis**: new `series_limit` and `series_limit_metric` controls limit the Y categories to the top N by a metric, in the query and in the chart. Without a limit, more than 25 categories are capped to the 15 with the highest total, so the Y axis stays readable.
+
+### Changed
+- Installer examples in the README point to the new SSD paths.
+
 ## [0.8.0] - 2026-11-11
 
 ### Fixed
