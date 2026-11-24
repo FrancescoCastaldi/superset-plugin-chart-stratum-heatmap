@@ -218,13 +218,13 @@ describe('buildHeatmapOption', () => {
 
     const lblCustom = optionCustom.series[0].label.formatter;
     expect(lblCustom({ data: { value: [0, 0, 25, zeroMeta] } })).toBe('25\nPrimo accesso');
-    expect(lblCustom({ data: { value: [1, 0, 120, compMeta] } })).toBe('120\n+20.0%');
+    expect(lblCustom({ data: { value: [1, 0, 120, compMeta] } })).toBe('120\n+20,0%');
 
     const tipCustom = optionCustom.tooltip.formatter;
     expect(tipCustom({ data: { value: [0, 0, 25, zeroMeta] } })).toContain('Primo accesso');
     expect(tipCustom({ data: { value: [0, 0, 25, zeroMeta] } })).not.toContain('[Nuovo]');
-    expect(tipCustom({ data: { value: [1, 0, 120, compMeta] } })).toContain('+20.0%');
-    expect(tipCustom({ data: { value: [1, 0, 120, compMeta] } })).not.toContain('+20 (+20.0%)');
+    expect(tipCustom({ data: { value: [1, 0, 120, compMeta] } })).toContain('+20,0%');
+    expect(tipCustom({ data: { value: [1, 0, 120, compMeta] } })).not.toContain('+20 (+20,0%)');
 
     const optionAbs = buildHeatmapOption(baseParams({
       comparisonHighlight: false,
@@ -234,6 +234,6 @@ describe('buildHeatmapOption', () => {
     expect(optionAbs.series[0].label.formatter({ data: { value: [1, 0, 120, compMeta] } })).toBe('120\n+20');
     const tipAbs = optionAbs.tooltip.formatter({ data: { value: [1, 0, 120, compMeta] } });
     expect(tipAbs).toContain('+20');
-    expect(tipAbs).not.toContain('+20.0%');
+    expect(tipAbs).not.toContain('+20,0%');
   });
 });

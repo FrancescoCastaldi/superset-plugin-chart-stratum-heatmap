@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-24
+
+### Changed
+- **Numbers in Italian format.** Thousands are separated by a dot and decimals by a comma in the cells, the legend, the tooltips, the comparison and the annotations (`1.234`, `7,03`, `12,3%`). Also the formats chosen in the control panel (`,.2f`, `.1%`, `~s`) are written this way, and the one-decimal percentages of the deltas too.
+
 ## [0.9.0] - 2026-11-24
 
 ### Added

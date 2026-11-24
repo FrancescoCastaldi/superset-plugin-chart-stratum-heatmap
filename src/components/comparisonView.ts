@@ -7,6 +7,7 @@
  */
 import { DeltaColorScale, DeltaDisplayType, HeatmapCellData } from '../types';
 import { formatMetricValue } from '../utils/formatting';
+import { formatNumber } from '../utils/numberFormat';
 import type { TimeFormatOptions } from '../utils/timeValues';
 
 // Same end points as the diverging palettes of transformProps: [negative, positive].
@@ -89,7 +90,7 @@ export function formatDeltaBody(
   const absolute = signed(meta.delta, meta.timeFormat, valueFormatOf(meta));
   const percent =
     meta.deltaPercent !== null && meta.deltaPercent !== undefined
-      ? `${meta.deltaPercent > 0 ? '+' : ''}${meta.deltaPercent.toFixed(1)}%`
+      ? `${meta.deltaPercent > 0 ? '+' : ''}${formatNumber(meta.deltaPercent, 1, 1)}%`
       : null;
 
   let body: string;

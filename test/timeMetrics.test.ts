@@ -46,7 +46,7 @@ describe('time values in the heatmap', () => {
     expect(parseTimeToSeconds('00:12:54.425000')).toBeCloseTo(774.425, 6);
     expect(formatDuration(774.425)).toBe('12:54');
     expect(formatMetricValue(600, 'SMART_NUMBER', { format: 'auto' })).toBe('10:00');
-    expect(formatMetricValue(1200, 'SMART_NUMBER')).toBe('1.2k');
+    expect(formatMetricValue(1200, 'SMART_NUMBER')).toBe('1,2k');
     expect(formatMetricValue(null, 'SMART_NUMBER', { format: 'auto' })).toBe('—');
   });
 });
@@ -140,7 +140,7 @@ describe('heatmap with a Time metric', () => {
     });
 
     it('writes the change as a duration with its percentage', () => {
-      expect(describeDelta(cell)?.text).toBe('▲ +05:00 (+50.0%)');
+      expect(describeDelta(cell)?.text).toBe('▲ +05:00 (+50,0%)');
     });
   });
 

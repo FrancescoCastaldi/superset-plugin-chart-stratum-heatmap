@@ -34,7 +34,7 @@ describe('the component draws the formats it receives', () => {
   it('writes the legend scale in the number format chosen', () => {
     const option: any = heatmapOptionFromProps(run({ numberFormat: '.1%' }, ratios) as any);
     const visualMap = Array.isArray(option.visualMap) ? option.visualMap[0] : option.visualMap;
-    expect(visualMap.formatter(0.25)).toBe('25.0%');
+    expect(visualMap.formatter(0.25)).toBe('25,0%');
   });
 
   it('writes the legend scale by bands in the number format chosen', () => {
@@ -42,7 +42,7 @@ describe('the component draws the formats it receives', () => {
       run({ numberFormat: '.1%', visualMapMode: 'piecewise' }, ratios) as any,
     );
     const visualMap = Array.isArray(option.visualMap) ? option.visualMap[0] : option.visualMap;
-    expect(visualMap.formatter(0.1, 0.2)).toBe('10.0% - 20.0%');
+    expect(visualMap.formatter(0.1, 0.2)).toBe('10,0% - 20,0%');
   });
 
   it('writes the legend scale as durations for a Time metric', () => {
@@ -80,7 +80,7 @@ describe('the component draws the formats it receives', () => {
     );
     const visualMap = Array.isArray(option.visualMap) ? option.visualMap[0] : option.visualMap;
     expect(visualMap.show).toBe(false);
-    expect(option.graphic?.some((g: any) => g.style?.text === '+20.0%')).toBe(true);
+    expect(option.graphic?.some((g: any) => g.style?.text === '+20,0%')).toBe(true);
     expect(option.graphic?.some((g: any) => /vs/.test(g.style?.text ?? ''))).toBe(false);
   });
 });

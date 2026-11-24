@@ -32,22 +32,22 @@ const meta = (overrides: Partial<HeatmapCellData> = {}): HeatmapCellData => ({
 
 describe('describeDelta', () => {
   it('writes arrow, absolute change and percent by default', () => {
-    expect(describeDelta(meta())).toEqual({ text: '▲ +20 (+20.0%)', tone: 'up' });
+    expect(describeDelta(meta())).toEqual({ text: '▲ +20 (+20,0%)', tone: 'up' });
     expect(describeDelta(meta({ delta: -5, deltaPercent: -5 }))).toEqual({
-      text: '▼ -5 (-5.0%)',
+      text: '▼ -5 (-5,0%)',
       tone: 'down',
     });
   });
 
   it('follows the display type of the chart', () => {
     expect(describeDelta(meta(), 'absolute')?.text).toBe('▲ +20');
-    expect(describeDelta(meta(), 'percentage')?.text).toBe('▲ +20.0%');
+    expect(describeDelta(meta(), 'percentage')?.text).toBe('▲ +20,0%');
   });
 
   it('falls back to the absolute change when there is no percent, and marks a flat cell', () => {
     expect(describeDelta(meta({ deltaPercent: null }), 'both')?.text).toBe('▲ +20');
     expect(describeDelta(meta({ delta: 0, deltaPercent: 0 }))).toEqual({
-      text: '= 0 (0.0%)',
+      text: '= 0 (0,0%)',
       tone: 'flat',
     });
   });
@@ -63,7 +63,7 @@ describe('describeDelta', () => {
 
 describe('buildComparisonLabel', () => {
   it('puts the value first and the pill under it', () => {
-    expect(buildComparisonLabel(meta(), 120)).toBe('{v|120}\n{up|▲ +20 (+20.0%)}');
+    expect(buildComparisonLabel(meta(), 120)).toBe('{v|120}\n{up|▲ +20 (+20,0%)}');
   });
 
   it('shows just the value when the cell has no comparison', () => {
@@ -187,8 +187,8 @@ describe('comparison layout by cell size', () => {
   });
 
   it('writes each layout', () => {
-    expect(buildComparisonLabel(meta(), 120, 'both', 'Nuovo', 'stacked')).toBe('{v|120}\n{up|▲ +20 (+20.0%)}');
-    expect(buildComparisonLabel(meta(), 120, 'both', 'Nuovo', 'inline')).toBe('{v|120}  {up|▲ +20 (+20.0%)}');
+    expect(buildComparisonLabel(meta(), 120, 'both', 'Nuovo', 'stacked')).toBe('{v|120}\n{up|▲ +20 (+20,0%)}');
+    expect(buildComparisonLabel(meta(), 120, 'both', 'Nuovo', 'inline')).toBe('{v|120}  {up|▲ +20 (+20,0%)}');
     expect(buildComparisonLabel(meta(), 120, 'both', 'Nuovo', 'compact')).toBe('{v|120} {up|▲}');
     expect(
       buildComparisonLabel(meta({ isZeroBaseline: true, comparisonValue: 0 }), 120, 'both', 'Nuovo', 'compact'),
@@ -204,7 +204,7 @@ describe('comparison layout by cell size', () => {
       height: 330,
     });
     expect(wide.series[0].label.formatter({ data: cell(0, 0, 120, 100, 'A') })).toBe(
-      '{v|120}  {up|▲ +20 (+20.0%)}',
+      '{v|120}  {up|▲ +20 (+20,0%)}',
     );
     const tall = buildHeatmapOption({
       ...params(),
@@ -214,7 +214,7 @@ describe('comparison layout by cell size', () => {
       height: 900,
     });
     expect(tall.series[0].label.formatter({ data: cell(0, 0, 120, 100, 'A') })).toBe(
-      '{v|120}\n{up|▲ +20 (+20.0%)}',
+      '{v|120}\n{up|▲ +20 (+20,0%)}',
     );
   });
 });
@@ -225,7 +225,7 @@ describe('highlighted comparison in the option', () => {
     expect(option.graphic).toBeUndefined();
     expect(option.series[0].label.rich).toBeUndefined();
     expect(option.visualMap.show).toBe(true);
-    expect(labelOf(option, 0, 0, 120, 100, 'A')).toBe('120\n+20 (+20.0%)');
+    expect(labelOf(option, 0, 0, 120, 100, 'A')).toBe('120\n+20 (+20,0%)');
   });
 
   it('shows the delta scale without header when colored by delta and comparisonHighlight is off', () => {
@@ -235,13 +235,13 @@ describe('highlighted comparison in the option', () => {
     expect(option.graphic.some((g: any) => g.style?.text === '+40')).toBe(true);
     expect(option.graphic.some((g: any) => g.style?.text === '-40')).toBe(true);
     expect(option.graphic.some((g: any) => /vs/.test(g.style?.text ?? ''))).toBe(false);
-    expect(labelOf(option, 0, 0, 120, 100, 'A')).toBe('120\n+20 (+20.0%)');
+    expect(labelOf(option, 0, 0, 120, 100, 'A')).toBe('120\n+20 (+20,0%)');
   });
 
   it('writes the pill, the header and the delta scale when the flag is on', () => {
     const option = buildHeatmapOption(params({ comparisonHighlight: true }));
-    expect(labelOf(option, 0, 0, 120, 100, 'A')).toBe('{v|120}\n{up|▲ +20 (+20.0%)}');
-    expect(labelOf(option, 0, 1, 40, 80, 'B')).toBe('{v|40}\n{down|▼ -40 (-50.0%)}');
+    expect(labelOf(option, 0, 0, 120, 100, 'A')).toBe('{v|120}\n{up|▲ +20 (+20,0%)}');
+    expect(labelOf(option, 0, 1, 40, 80, 'B')).toBe('{v|40}\n{down|▼ -40 (-50,0%)}');
     expect(option.series[0].label.rich.up).toBeDefined();
     expect(option.visualMap.show).toBe(false);
     expect(option.graphic.some((g: any) => /ott 2026 {2}vs {2}set 2026/.test(g.style?.text ?? ''))).toBe(true);
